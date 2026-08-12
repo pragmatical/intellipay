@@ -1,0 +1,280 @@
+{
+    "schema_version": 1,
+    "cases": [
+        {
+            "case_id": "inv-1001-txt",
+            "path": "data/invoices/invoice_1001.txt",
+            "business_identity": "INV-1001",
+            "format": "txt",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1002-txt",
+            "path": "data/invoices/invoice_1002.txt",
+            "business_identity": "INV-1002",
+            "format": "txt",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INSUFFICIENT_STOCK",
+                "PAYMENT_TERMS_DATE_MISMATCH"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1003-txt",
+            "path": "data/invoices/invoice_1003.txt",
+            "business_identity": "INV-1003",
+            "format": "txt",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INVALID_DATE",
+                "UNKNOWN_ITEM"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1004-json",
+            "path": "data/invoices/invoice_1004.json",
+            "business_identity": "INV-1004",
+            "format": "json",
+            "relationship": "original",
+            "sequence_group": "inv-1004-revision",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1004-r1-json",
+            "path": "data/invoices/invoice_1004_revised.json",
+            "business_identity": "INV-1004",
+            "format": "json",
+            "relationship": "revision",
+            "sequence_group": "inv-1004-revision",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1005-json",
+            "path": "data/invoices/invoice_1005.json",
+            "business_identity": "INV-1005",
+            "format": "json",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INSUFFICIENT_STOCK"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1006-csv",
+            "path": "data/invoices/invoice_1006.csv",
+            "business_identity": "INV-1006",
+            "format": "csv",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1007-csv",
+            "path": "data/invoices/invoice_1007.csv",
+            "business_identity": "INV-1007",
+            "format": "csv",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "REJECT",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INSUFFICIENT_STOCK",
+                "TOTAL_MISMATCH"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1008-txt",
+            "path": "data/invoices/invoice_1008.txt",
+            "business_identity": "INV-1008",
+            "format": "txt",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "NEAR_THRESHOLD_RISK",
+                "UNKNOWN_ITEM"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1009-json",
+            "path": "data/invoices/invoice_1009.json",
+            "business_identity": "INV-1009",
+            "format": "json",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "REJECT",
+            "expected_findings": [
+                "INVALID_QUANTITY",
+                "MISSING_REQUIRED_FIELD",
+                "SUBTOTAL_MISMATCH",
+                "TOTAL_MISMATCH"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1010-txt",
+            "path": "data/invoices/invoice_1010.txt",
+            "business_identity": "INV-1010",
+            "format": "txt",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1011-pdf",
+            "path": "data/invoices/invoice_1011.pdf",
+            "business_identity": "INV-1011",
+            "format": "pdf",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1011-variants",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1011-txt",
+            "path": "data/invoices/invoice_1011.txt",
+            "business_identity": "INV-1011",
+            "format": "txt",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1011-variants",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1012-pdf",
+            "path": "data/invoices/invoice_1012.pdf",
+            "business_identity": "INV-1012",
+            "format": "pdf",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1012-variants",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1012-txt",
+            "path": "data/invoices/invoice_1012.txt",
+            "business_identity": "INV-1012",
+            "format": "txt",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1012-variants",
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1013-json",
+            "path": "data/invoices/invoice_1013.json",
+            "business_identity": "INV-1013",
+            "format": "json",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1013-variants",
+            "expected_outcome": "REJECT",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INSUFFICIENT_STOCK",
+                "TOTAL_MISMATCH"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1013-pdf",
+            "path": "data/invoices/invoice_1013.pdf",
+            "business_identity": "INV-1013",
+            "format": "pdf",
+            "relationship": "equivalent",
+            "sequence_group": "inv-1013-variants",
+            "expected_outcome": "REJECT",
+            "expected_findings": [
+                "HIGH_VALUE",
+                "INSUFFICIENT_STOCK",
+                "TOTAL_MISMATCH"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1014-xml",
+            "path": "data/invoices/invoice_1014.xml",
+            "business_identity": "INV-1014",
+            "format": "xml",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "UNSUPPORTED_CURRENCY"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1015-csv",
+            "path": "data/invoices/invoice_1015.csv",
+            "business_identity": "INV-1015",
+            "format": "csv",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "APPROVE",
+            "expected_findings": [],
+            "payment_expected": true,
+            "label_status": "draft"
+        },
+        {
+            "case_id": "inv-1016-json",
+            "path": "data/invoices/invoice_1016.json",
+            "business_identity": "INV-1016",
+            "format": "json",
+            "relationship": "standalone",
+            "sequence_group": null,
+            "expected_outcome": "ESCALATE",
+            "expected_findings": [
+                "UNKNOWN_ITEM"
+            ],
+            "payment_expected": false,
+            "label_status": "draft"
+        }
+    ]
+}
