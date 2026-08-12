@@ -1,6 +1,6 @@
 # ADR-0002: Use Deterministic-First Invoice Processing
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 

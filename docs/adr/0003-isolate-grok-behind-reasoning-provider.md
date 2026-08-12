@@ -1,6 +1,6 @@
 # ADR-0003: Isolate Grok Behind a Reasoning Provider
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 
@@ -27,6 +27,8 @@ The proposed solution uses xAI Grok for ambiguous extraction and bounded approva
 Chosen option: **ReasoningProvider interface**
 
 Place xAI behind a narrow application-owned interface with structured `extract_invoice` and `critique_decision` operations. Provide an xAI adapter for configured runs and a deterministic fake for tests and offline development. Keep endpoint, model, credentials, timeout, retry, and retention settings outside workflow code.
+
+Expose two explicit modes through one configuration setting. `local` is the default and uses deterministic simulated reasoning with no external API access. `live` is opt-in and calls xAI with configured credentials. Both modes implement the same contract, preserve all deterministic controls, and record the selected mode in run metadata.
 
 ### Consequences
 

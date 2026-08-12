@@ -1,6 +1,6 @@
 # ADR-0004: Use SQLite for the Local Prototype
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 

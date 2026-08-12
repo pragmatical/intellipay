@@ -34,7 +34,7 @@ The implementation should maintain these version-controlled assets:
 
 | Asset | Required content | Purpose |
 |---|---|---|
-| Manifest | Case ID, path, format, scenario tags, related revision, and split | Defines the evaluated population without encoding expected behavior in test code |
+| Manifest | Unique case ID, business invoice identity, path, format, scenario tags, relationship type, sequence group, and split | Defines the evaluated population without encoding expected behavior in test code |
 | Gold invoice | Canonical fields, line items, raw-to-normalized expectations, and tolerated alternatives | Scores extraction and normalization |
 | Gold findings | Stable finding code, severity, affected field or item, and expected facts | Scores deterministic controls |
 | Gold route | Expected `APPROVE`, `REJECT`, or `ESCALATE`, acceptable reason codes, and policy assumptions | Scores graph and policy behavior |
@@ -50,17 +50,31 @@ Each gold record needs a label status of `draft`, `domain-reviewed`, or `approve
 
 Use every supplied invoice as a functional acceptance case. Preserve the original and revised INV-1004 as linked records rather than independent invoices.
 
+Run the corpus in two complementary modes:
+
+1. **Isolated fixture evaluation:** Each file runs from a clean operational state under its unique case ID. This scores parser and control behavior without treating alternate representations as prior submissions.
+2. **Operational sequence evaluation:** Related files run in a declared order against shared state. This scores exact duplicates, revisions, conflicting documents, payment idempotency, and supersession behavior.
+
+The manifest must classify same-identity files explicitly:
+
+- INV-1011 TXT and PDF are equivalent format variants.
+- INV-1012 TXT and PDF are equivalent format variants.
+- INV-1013 JSON and PDF share an invoice identity but contain conflicting facts; isolated runs score each parser, while the ordered sequence must escalate the second document as a conflicting version and must not create a second payment.
+- INV-1004 and INV-1004 R1 are an explicit revision sequence requiring a supersession decision.
+
 | Scenario | Seed cases | Primary assertion |
 |---|---|---|
 | Clean baseline | 1001, 1004, 1011, 1015 | Correct extraction with no false hard failure |
-| Stock mismatch | 1002, 1005, 1007 | Expected inventory finding for every affected item |
+| Stock mismatch | 1002, 1005, 1007, 1013 | Expected aggregate inventory finding for every affected item |
 | Unknown or unavailable item | 1003, 1008, 1016 | Unknown or unavailable finding and no payment |
 | Invalid values | 1009 | Negative and missing-value hard failures |
-| Format and OCR resilience | 1002, 1006, 1008, 1012, 1014 | Correct normalization or explicit escalation with source evidence |
+| Format and OCR resilience | 1002, 1006, 1007, 1008, 1012, 1014 | Correct normalization or explicit escalation with source evidence |
 | Revision and duplicate | 1004 and 1004 R1 | Linked versions and duplicate-payment prevention |
-| Complex pricing | 1010, 1013 | Arithmetic reconciliation and policy exception where required |
+| Complex pricing | 1010, 1013 | Arithmetic reconciliation, including the INV-1013 $50 discrepancy, and policy exception where required |
 | High value | 1002, 1003, 1005, 1007, 1013 | Enhanced-review policy fires |
 | Foreign currency | 1014 | EUR is preserved and unsupported policy is not invented |
+
+INV-1007 must additionally produce an arithmetic finding for its $110 total discrepancy and preserve evidence for its non-ISO date normalization. Inventory validation aggregates quantities by normalized item identity across all lines before comparing demand with the inventory snapshot.
 
 ### Development Variants
 
@@ -96,11 +110,11 @@ Use a de-identified sample of historical invoices processed in parallel with the
 
 ### Offline Deterministic Suite
 
-The default test suite must use a deterministic fake `ReasoningProvider`. It must run without network access and produce stable extraction candidates, critic defects, repair responses, and critique responses. This suite is the required gate for normal development and continuous integration.
+The default `local` mode test suite must use a deterministic simulated `ReasoningProvider`. It must run without network access and produce stable extraction candidates, critic defects, repair responses, and critique responses. This suite is the required gate for normal development and continuous integration. Every result records `reasoning_mode=local`.
 
 ### Live Grok Suite
 
-Live-model evaluation is opt-in and must never be required for an offline build. Pin the prompt template, response schema, model identifier, and supported sampling settings. Record redacted request and response hashes, latency, token usage, estimated cost, schema failures, retries, and final structured output.
+`live` mode evaluation is opt-in and must never be required for an offline build. Pin the prompt template, response schema, model identifier, and supported sampling settings. Record `reasoning_mode=live`, redacted request and response hashes, latency, token usage, estimated cost, schema failures, retries, and final structured output.
 
 Run repeated samples for cases that depend on model interpretation. Report the distribution of outcomes and structured-field accuracy rather than selecting the best response. A prompt or model change cannot be promoted if it regresses a hard-control route, increases unsafe approvals, or reduces critical-field accuracy beyond an agreed tolerance.
 

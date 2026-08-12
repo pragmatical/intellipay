@@ -1,6 +1,6 @@
 # ADR-0006: Use Three Terminal Decision Outcomes
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 
@@ -27,6 +27,8 @@ The supplied invoices include clean cases, deterministic failures, and cases whe
 Chosen option: **Approve, reject, or escalate**
 
 The policy engine produces `APPROVE`, `REJECT`, or `ESCALATE`. Hard failures reject or request correction, valid low-risk invoices may be approved within delegated limits, and uncertainty or enhanced-review conditions escalate to a durable human review queue. Approval alone does not authorize payment; payment gates remain separate.
+
+These are the only workflow outcomes. `HOLD` is an escalation reason that blocks payment, and `REQUEST_CORRECTION` is a follow-up action available after rejection or review; neither is a fourth outcome.
 
 ### Consequences
 

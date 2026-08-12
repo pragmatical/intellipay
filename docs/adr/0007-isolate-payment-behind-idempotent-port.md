@@ -1,6 +1,6 @@
 # ADR-0007: Isolate Payment Behind an Idempotent Port
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 

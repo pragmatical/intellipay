@@ -48,10 +48,12 @@ Below is a starter schema and seed data that covers the core items referenced ac
 ```python
 import sqlite3
 
-conn = sqlite3.connect('inventory.db')  # Persist to file so all agents can access it
+conn = sqlite3.connect("inventory.db")  # Persist to file so all agents can access it
 cursor = conn.cursor()
 
-cursor.execute('CREATE TABLE IF NOT EXISTS inventory (item TEXT PRIMARY KEY, stock INTEGER)')
+cursor.execute(
+    "CREATE TABLE IF NOT EXISTS inventory (item TEXT PRIMARY KEY, stock INTEGER)"
+)
 cursor.execute("""
     INSERT INTO inventory VALUES
     ('WidgetA', 15),
@@ -89,8 +91,7 @@ from xai import Grok
 
 client = Grok(api_key="your_key")
 response = client.chat.completions.create(
-    model="grok-3",
-    messages=[{"role": "user", "content": "Reason about this..."}]
+    model="grok-3", messages=[{"role": "user", "content": "Reason about this..."}]
 )
 ```
 
@@ -103,17 +104,3 @@ python main.py --invoice_path=data/invoices/invoice1.txt
 ```
 
 Output should include structured logs and results.
-
-## Evaluation Criteria
-
-- **Functionality** — Does the system work end-to-end?
-- **Code Quality** — Clean, testable, well-structured code with error handling and observability
-- **Agentic Sophistication** — LLM integration, multi-agent flow, tool use, self-correction loops
-- **Shipping Mindset** — Valuable MVP delivered under ambiguity; scope ruthlessly cut where needed
-- **Presentation** — Clear translation of technical decisions to business impact
-- **Above/Beyond** - Have you made it your own? Implemented additional features that make the solution feel great? Expanded assumptions? Added to test cases?
-- **UI/UX** - Users will understand and enjoy using this system.
-
-## Submission
-
-Submit your solution as a link to a public GitHub repository — GitHub only (github.com).

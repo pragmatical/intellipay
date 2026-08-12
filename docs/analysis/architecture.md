@@ -203,26 +203,28 @@ The authoritative evaluation strategy, required datasets, quality gates, ownersh
 
 Maintain four version-controlled assets:
 
-1. `manifest`: document path, format, scenario tags, and split.
+1. `manifest`: unique case ID, business invoice identity, document path, format, scenario tags, relationship type, sequence group, and split.
 2. `gold invoice`: expected canonical fields and line items.
 3. `gold findings`: expected stable validation codes and severities.
 4. `gold outcome`: expected `APPROVE`, `REJECT`, or `ESCALATE`, with acceptable reason codes.
 
-The 16 supplied invoice identities form the seed corpus. Treat the original and revised INV-1004 as linked test cases. A finance/domain reviewer must approve gold outcomes because the README does not define every policy decision.
+The 16 supplied invoice identities form the seed corpus. Score each file independently from clean state for extraction coverage, then run declared same-identity sequences for duplicate, revision, conflict, and idempotency behavior. Treat the original and revised INV-1004 as linked test cases; treat equivalent INV-1011 and INV-1012 formats as variants; and treat the differing INV-1013 documents as a conflicting-version sequence. A finance/domain reviewer must approve gold outcomes because the README does not define every policy decision.
 
 ### Seed Scenario Matrix
 
 | Scenario | Seed cases | Primary assertion |
 |---|---|---|
 | Clean baseline | 1001, 1004, 1011, 1015 | Correct extraction and no false hard failure |
-| Stock mismatch | 1002, 1005, 1007 | Expected inventory finding for each affected item |
+| Stock mismatch | 1002, 1005, 1007, 1013 | Expected finding after aggregating demand by normalized item identity |
 | Unknown/zero-stock item | 1003, 1008, 1016 | Unknown/unavailable finding; no payment |
 | Invalid values | 1009 | Negative and missing-field hard failures |
-| Format/OCR resilience | 1002, 1006, 1008, 1012, 1014 | Correct normalization with source evidence |
+| Format/OCR resilience | 1002, 1006, 1007, 1008, 1012, 1014 | Correct normalization with source evidence |
 | Revision/duplicate | 1004 and 1004 R1 | Linked versions and duplicate-payment prevention |
-| Complex pricing | 1010, 1013 | Arithmetic reconciliation and policy exception where required |
+| Complex pricing | 1010, 1013 | Arithmetic reconciliation, including INV-1013's $50 discrepancy, and policy exception where required |
 | High value | 1002, 1003, 1005, 1007, 1013 | Enhanced-review rule fires |
 | Foreign currency | 1014 | EUR preserved and currency policy evaluated |
+
+INV-1007 additionally exercises a $110 total discrepancy and non-ISO date normalization.
 
 ### Test Layers
 

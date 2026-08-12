@@ -4,7 +4,33 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** The business analysis, solution architecture, evaluation approach, and architecture decisions are defined. The runnable Python service, review interface, database migrations, and automated tests are the next implementation work.
+> **Current status:** The first runnable Python slice implements the typed reasoning boundary with deterministic local simulation and opt-in live Grok extraction. Workflow orchestration, persistence, financial controls, payment, and the review interface remain implementation work.
+
+## Run the Reasoning Slice
+
+Install the locked environment and run the default offline simulation:
+
+```bash
+uv sync --all-groups
+uv run intellipay data/invoices/invoice_1001.txt
+```
+
+The result records `mode: local`, uses no network access, and conforms to the same validated invoice schema as live Grok.
+
+To exercise real Grok behavior, provide the credential directly in your shell or through an uncommitted `.env`, then opt into live mode:
+
+```bash
+cp .env.example .env
+# Set XAI_API_KEY in .env, then run:
+uv run intellipay --reasoning-mode live data/invoices/invoice_1001.txt
+```
+
+Live mode calls the configurable xAI endpoint, currently `https://api.x.ai/v1`, using structured output from the configured model. It fails before making a request when `XAI_API_KEY` is absent. Run the offline provider contracts and the credentialed smoke test separately:
+
+```bash
+uv run pytest tests/reasoning/test_providers.py
+XAI_API_KEY=... uv run pytest tests/reasoning/test_grok_live.py -m live
+```
 
 ## Solution Overview
 
@@ -147,14 +173,16 @@ See the [solution evaluation approach](docs/analysis/evaluation-approach.md) for
 | [`docs/analysis/`](docs/analysis/) | Business case, proposed solution, architecture, and evaluation approach |
 | [`docs/adr/`](docs/adr/) | Architecture decision records and trade-offs |
 | [`docs/planning/`](docs/planning/) | Phased implementation plan and functional MVP exit gates |
+| [`src/intellipay/`](src/intellipay/) | Runnable application package and reasoning adapters |
+| [`tests/`](tests/) | Offline contracts and opt-in live Grok smoke coverage |
 | [`.github/skills/`](.github/skills/) | Repository-specific Copilot workflows |
 | [`.devcontainer/`](.devcontainer/) | Reproducible local development environment |
 
-Application modules, migrations, tests, evaluation assets, and the review interface will be added as the implementation progresses.
+Workflow modules, migrations, evaluation assets, and the review interface will be added as implementation progresses.
 
 ## Implementation Sequence
 
-The [functional MVP implementation plan](docs/planning/implementation-plan.md) defines detailed deliverables, verification, demonstrations, dependencies, risks, and exit gates for each phase.
+The [functional MVP implementation plan](docs/planning/implementation-plan.md) defines detailed deliverables, measures, verification procedures, dependencies, risks, and exit gates for each phase.
 
 1. Build canonical models, format adapters, inventory persistence, deterministic validation, and mock payment.
 2. Connect the vertical slice with LangGraph and prove approve, reject, escalate, and replay-safe payment routes.

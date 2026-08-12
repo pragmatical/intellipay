@@ -1,6 +1,6 @@
 # ADR-0005: Preserve Evidence-Level Lineage
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-12
 - **Decision owners:** To be assigned
 

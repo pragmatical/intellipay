@@ -129,6 +129,13 @@ class ReasoningProvider(Protocol):
 
 The production adapter calls an approved xAI model through its current supported API or OpenAI-compatible endpoint. Endpoint, model name, API key, timeout, retry limit, and data-retention mode are configuration, not hard-coded values. A deterministic fake adapter supports local tests and the no-internet runtime.
 
+The runtime exposes one explicit reasoning mode:
+
+- `local` is the default. Grok and payment are simulated through deterministic adapters, and the complete workflow runs without network access.
+- `live` is opt-in. The reasoning provider calls the configured xAI API, while payment remains mocked and all graph, schema, policy, and authorization controls remain unchanged.
+
+Every run records its reasoning mode. Both modes implement the same typed provider contract and must pass the same graph-route and safety tests.
+
 ### Model Tasks
 
 - Convert noisy or unstructured text into the canonical schema.
@@ -163,6 +170,7 @@ The extraction loop is bounded to two model attempts. The critic returns machine
 ### Reference and Business Validation
 
 - Item existence and requested quantity compared with inventory snapshot.
+- Aggregate quantities by normalized item identity across all invoice lines before comparing demand with inventory; preserve per-line findings for evidence.
 - Vendor and bank-account status when a vendor master becomes available.
 - PO and goods-receipt matching when those systems become available.
 - Price and tax tolerance against contract/PO policy.
@@ -175,27 +183,33 @@ Inventory shortage should initially be an exception, not automatically labeled i
 
 The minimum policy is:
 
-- Hard-control failure: `REJECT` or `REQUEST_CORRECTION`.
-- Duplicate payment or unverified payment-instruction change: `HOLD` and human review.
+- Hard-control failure: `REJECT`; `REQUEST_CORRECTION` may be recorded as the recommended follow-up action.
+- Duplicate payment or unverified payment-instruction change: `ESCALATE` with a `HOLD` reason that prevents payment until review resolves it.
 - Amount above $10,000: enhanced review; do not auto-pay until delegated authority is defined.
+- Amount within a configurable band below an approval threshold, combined with an unknown vendor or item: add a near-threshold risk signal and `ESCALATE`; the amount alone is not a fraud finding.
 - Suspicious signal cluster, unknown vendor/item, unsupported currency, or low confidence: `ESCALATE`.
 - Valid low-risk invoice within delegated limits: `APPROVE`.
 
-Policy is versioned configuration with tests. Each decision records the policy version and the exact rules fired.
+The only workflow outcomes are `APPROVE`, `REJECT`, and `ESCALATE`. `HOLD` and `REQUEST_CORRECTION` are reason or follow-up-action codes, not additional workflow outcomes. Policy is versioned configuration with tests. Each decision records the policy version and the exact rules fired.
+
+Date integrity findings distinguish missing dates, unparseable or relative dates, and due dates inconsistent with stated payment terms. These findings preserve the source value and do not silently infer a date.
 
 ## Handling the Supplied Scenarios
 
 | Scenario | Proposed behavior |
 |---|---|
 | INV-1001 | Parse deterministically, validate, and approve if policy permits |
-| INV-1002 | Recover typos, flag quantity above inventory, and route for reconciliation; enhanced review due to amount |
-| INV-1003 | Hard-stop unavailable item plus high-risk signal cluster; no payment |
+| INV-1002 | Recover typos, flag quantity above inventory, detect the due-date/Net-30 inconsistency, and escalate due to amount and findings |
+| INV-1003 | Hard-stop unavailable item, unparseable relative due date, and high-risk signal cluster; no payment |
 | INV-1004 and R1 | Link revision lineage, prevent both versions from being paid, and require supersession decision |
-| INV-1005/1007 | Flag inventory mismatch and enhanced-review threshold |
+| INV-1005 | Flag inventory mismatch and enhanced-review threshold |
+| INV-1007 | Flag aggregate inventory mismatch, enhanced-review threshold, non-ISO date normalization, and the $110 total discrepancy |
 | INV-1006 | Parse repeated field/value CSV rows with a dedicated adapter |
-| INV-1008/1016 | Flag unknown catalog items; do not let Grok invent mappings |
+| INV-1008 | Flag unknown catalog items and the combined near-threshold risk signal; do not let Grok invent mappings |
+| INV-1016 | Flag unknown catalog items; do not let Grok invent mappings |
 | INV-1009 | Reject negative quantity/total and missing required fields |
-| INV-1010/1013 | Recompute complex totals and route price/discount exceptions to review |
+| INV-1010 | Recompute complex totals and route price exceptions to review |
+| INV-1013 | Aggregate repeated-item quantities for inventory checks, detect the $50 total discrepancy, and route the high-value exception to review |
 | INV-1012 | Preserve OCR-like raw values, normalize with evidence, then verify arithmetic and dates |
 | INV-1014 | Preserve EUR and require supported-currency/FX policy |
 
