@@ -1,0 +1,10 @@
+{
+	"remote.extensionKind": {
+		"tomoki1207.pdf": [
+			"workspace"
+		]
+	},
+	"workbench.editorAssociations": {
+		"*.pdf": "pdf.preview"
+	}
+}

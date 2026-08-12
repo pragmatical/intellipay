@@ -59,6 +59,11 @@
 				"python.testing.pytestEnabled": true,
 				"python.testing.unittestEnabled": false,
 				"editor.formatOnSave": true,
+				"remote.extensionKind": {
+					"tomoki1207.pdf": [
+						"workspace"
+					]
+				},
 				"terminal.integrated.defaultProfile.linux": "zsh"
 			}
 		}
