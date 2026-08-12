@@ -11,7 +11,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1002-txt",
@@ -27,7 +27,7 @@
                 "PAYMENT_TERMS_DATE_MISMATCH"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1003-txt",
@@ -43,7 +43,7 @@
                 "UNKNOWN_ITEM"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1004-json",
@@ -55,7 +55,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1004-r1-json",
@@ -67,7 +67,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1005-json",
@@ -82,7 +82,7 @@
                 "INSUFFICIENT_STOCK"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1006-csv",
@@ -94,7 +94,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1007-csv",
@@ -110,7 +110,7 @@
                 "TOTAL_MISMATCH"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1008-txt",
@@ -125,7 +125,7 @@
                 "UNKNOWN_ITEM"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1009-json",
@@ -142,7 +142,7 @@
                 "TOTAL_MISMATCH"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1010-txt",
@@ -154,7 +154,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1011-pdf",
@@ -166,7 +166,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1011-txt",
@@ -178,7 +178,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1012-pdf",
@@ -190,7 +190,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1012-txt",
@@ -202,7 +202,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1013-json",
@@ -218,7 +218,7 @@
                 "TOTAL_MISMATCH"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1013-pdf",
@@ -234,7 +234,7 @@
                 "TOTAL_MISMATCH"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1014-xml",
@@ -248,7 +248,7 @@
                 "UNSUPPORTED_CURRENCY"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1015-csv",
@@ -260,7 +260,7 @@
             "expected_outcome": "APPROVE",
             "expected_findings": [],
             "payment_expected": true,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         },
         {
             "case_id": "inv-1016-json",
@@ -274,7 +274,7 @@
                 "UNKNOWN_ITEM"
             ],
             "payment_expected": false,
-            "label_status": "draft"
+            "label_status": "simulated-reviewed"
         }
     ]
 }

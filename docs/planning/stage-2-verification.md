@@ -43,6 +43,6 @@ JSON, CSV, XML, TXT, and image-only PDF files use deterministic adapters. PDF pr
 
 ## Label Status
 
-All 20 seed labels remain `draft` pending finance/domain approval. The implementation gate is satisfied against those versioned draft labels, but label approval is an external sign-off item rather than an engineering claim.
+All 20 seed labels are `simulated-reviewed` following the completed tabletop review. The implementation gate is satisfied against those versioned labels, but authorized finance/domain approval remains an external sign-off item rather than an engineering or simulation claim.
 
 The supplied INV-1013 JSON and PDF files were previously described as conflicting. Deterministic extraction shows equivalent invoice identity, line items, amounts, dates, currency, and terms; only decimal presentation differs. The manifest therefore classifies them as equivalent variants. A separate genuinely conflicting fixture is still needed to measure same-identity conflict detection beyond the INV-1004 revision case.

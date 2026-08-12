@@ -4,7 +4,7 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** Stages 1 through 4 are implemented and engineering-verified. The complete supplied corpus is controlled deterministically, ambiguous extraction is bounded and safely traced, and escalations now pause for authenticated, policy-constrained human review before the same checkpoint resumes. Finance/domain label approval and observed reviewer timing and confidence baselines remain external follow-up work.
+> **Current status:** Stages 1 through 4 are implemented and engineering-verified. The complete supplied corpus is controlled deterministically, ambiguous extraction is bounded and safely traced, and escalations now pause for authenticated, policy-constrained human review before the same checkpoint resumes. The finance/domain label review and AP usability protocols have completed tabletop simulations; authorized label approval and observed participant timing, confidence, and comprehension baselines remain external follow-up work.
 
 ## Run the Reasoning Slice
 

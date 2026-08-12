@@ -54,4 +54,4 @@ Queue empty, open, completed, and all filters are implemented. Unknown cases and
 
 ## Remaining Human Evidence
 
-The engineering and automated usability gate is passed. Active handling time, reviewer confidence, requests for help, and comprehension accuracy require sessions with accounts-payable participants and are not claimed by this verification. Finance/domain approval of the 20 Stage 2 draft labels also remains pending.
+The engineering and automated usability gate is passed, and the scripted usability simulation is complete. Active handling time, reviewer confidence, requests for help, and comprehension accuracy require sessions with accounts-payable participants and are not claimed by this verification. Authorized finance/domain approval of the 20 simulated-reviewed labels also remains pending.

@@ -1,8 +1,26 @@
 # Accounts-Payable Usability Evaluation Runbook
 
-**Purpose:** Establish observed reviewer comprehension, correctness, handling-time, and confidence baselines for the Stage 4 exception workflow.  
-**Product surface:** IntelliPay review queue and invoice detail  
-**Related criteria:** [Human evaluation](../analysis/evaluation-approach.md#human-evaluation) and [Stage 4 verification](../planning/stage-4-verification.md)
+**Purpose:** Establish observed reviewer comprehension, correctness, handling-time, and confidence baselines for the invoice exception workflow.
+
+**Product surface:** IntelliPay review queue and invoice detail
+
+**Related criteria:** [Human evaluation](../analysis/evaluation-approach.md#human-evaluation)
+
+## Goal
+
+Determine whether an accounts-payable reviewer can independently understand the invoice, connect material values to source evidence, explain why policy routed the case, and choose a safe next action with an auditable rationale.
+
+## Value
+
+- Reveals comprehension and workflow failures that automated tests cannot observe.
+- Measures whether evidence and policy explanations support real decisions.
+- Detects unsafe action affordances before operational use.
+- Establishes handling-time and confidence baselines for later comparison.
+- Turns observed friction into owned product changes or accepted limitations.
+
+## Simulation Status
+
+**Complete on 2026-08-12.** A scripted tabletop exercise plus one live browser walkthrough is recorded in [Accounts-payable usability simulation](accounts-payable-usability-simulation.md). This closes the rehearsal only; representative AP participant evidence remains distinct from simulated evidence.
 
 ## Completion Standard
 
@@ -51,7 +69,7 @@ Use synthetic or supplied test data only. Do not expose production invoices, cre
 
    ```bash
    uv sync --all-groups
-   uv run pytest tests/review/test_review_app.py tests/workflow/test_stage_four.py -q
+   uv run pytest -q
    ```
 
 2. Use a fresh SQLite database for each participant or reset it to a known snapshot.
@@ -121,7 +139,7 @@ Score each question independently:
 - `PARTIAL`: Main conclusion is correct but material evidence or policy is omitted.
 - `INCORRECT`: Material fact, route, action, or consequence is wrong.
 
-The Stage 4 external gate requires correct answers, not merely successful button clicks.
+The usability gate requires correct answers, not merely successful button clicks.
 
 ### Finding Severity
 
@@ -170,13 +188,13 @@ Classify root cause as `UX`, `POLICY`, `DATA`, `MODEL`, `WORKFLOW`, or `TRAINING
 
 Create one copy per participant. Use a non-identifying participant code where possible.
 
-**Participant code:**  
-**AP experience level:**  
-**Session date:**  
-**Facilitator:**  
-**Note taker:**  
-**Application version or commit:**  
-**Database or fixture set:**  
+- **Participant code:**
+- **AP experience level:**
+- **Session date:**
+- **Facilitator:**
+- **Note taker:**
+- **Application version or commit:**
+- **Database or fixture set:**
 
 | Task | Scenario | Completion | Q1 | Q2 | Q3 | Q4 | Active time | Help requests | Confidence |
 |---|---|---|---|---|---|---|---:|---:|---:|
@@ -194,18 +212,18 @@ Create one copy per participant. Use a non-identifying participant code where po
 
 ### Participant Debrief
 
-1. Which information was easiest to trust?  
-2. Which information was hardest to understand?  
-3. Did any available or unavailable action surprise you?  
-4. What additional evidence would you need in daily work?  
-5. Overall confidence, 1–5:  
+1. Which information was easiest to trust?
+2. Which information was hardest to understand?
+3. Did any available or unavailable action surprise you?
+4. What additional evidence would you need in daily work?
+5. Overall confidence, 1–5:
 
 ## Evaluation Summary Template
 
-**Evaluation dates:**  
-**Participant count:**  
-**Task count:**  
-**Scenarios covered:**  
+- **Evaluation dates:**
+- **Participant count:**
+- **Task count:**
+- **Scenarios covered:**
 
 | Measure | Result |
 |---|---:|
@@ -228,8 +246,8 @@ Create one copy per participant. Use a non-identifying participant code where po
 
 ### Sign-Off
 
-**Decision:** Passed / Passed with accepted limitations / Not passed  
-**Accepted limitations:**  
-**AP or finance owner:**  
-**Decision date:**  
-**Approval reference:**  
+- **Decision:** Passed / Passed with accepted limitations / Not passed
+- **Accepted limitations:**
+- **AP or finance owner:**
+- **Decision date:**
+- **Approval reference:**

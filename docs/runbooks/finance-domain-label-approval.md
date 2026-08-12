@@ -1,8 +1,26 @@
 # Finance and Domain Label Approval Runbook
 
-**Purpose:** Convert the 20 Stage 2 draft invoice labels into reviewed business-policy evidence without conflating software behavior with finance approval.  
-**Primary artifact:** [Stage 2 manifest](../../evaluation/stage2-manifest.json)  
-**Supporting evidence:** [Stage 2 report](../../evaluation/stage2-report.json) and [verification record](../planning/stage-2-verification.md)
+**Purpose:** Convert the 20 draft invoice labels into reviewed business-policy evidence without conflating software behavior with finance approval.
+
+**Primary artifact:** Versioned invoice corpus manifest in the `evaluation` directory.
+
+**Supporting evidence:** Machine-readable invoice corpus report in the `evaluation` directory.
+
+## Goal
+
+Establish an authorized, traceable expected outcome for every invoice fixture: the findings that should be raised, the route that should be taken, and whether payment is permitted. The review must start from source evidence and policy rather than from the system's current result.
+
+## Value
+
+- Gives engineering a trustworthy oracle for regression testing.
+- Makes finance policy assumptions visible and reviewable.
+- Prevents a passing evaluator from legitimizing an incorrect business expectation.
+- Creates an audit trail for disagreements, policy gaps, and label changes.
+- Protects payment controls by separating expected routing from payment authorization.
+
+## Simulation Status
+
+**Complete on 2026-08-12.** The tabletop exercise and automated corpus rerun are recorded in [Finance and domain label review simulation](finance-domain-label-approval-simulation.md). All labels are marked `simulated-reviewed`; this closes the rehearsal only and does not represent delegated finance approval.
 
 ## Completion Standard
 
@@ -31,8 +49,8 @@ One named person may hold multiple roles, but the final finance approver must ha
 ## Inputs
 
 - All files under [data/invoices](../../data/invoices/)
-- [Stage 2 manifest](../../evaluation/stage2-manifest.json)
-- [Stage 2 report](../../evaluation/stage2-report.json)
+- Versioned invoice corpus manifest
+- Machine-readable invoice corpus report
 - Current inventory fixture and validation policy
 - Relevant finance policies for dates, currency, amount thresholds, duplicates, revisions, and payment eligibility
 - A copy of the approval record template at the end of this runbook
@@ -45,7 +63,7 @@ One named person may hold multiple roles, but the final finance approver must ha
 
    ```bash
    uv sync --all-groups
-   uv run intellipay-evaluate --output evaluation/stage2-report.json
+   uv run intellipay-evaluate --output <corpus-report-path>
    uv run pytest -q
    ```
 
@@ -95,14 +113,14 @@ For each of the 20 cases:
 
 ## Applying Approved Changes
 
-1. Update only the approved fields in [evaluation/stage2-manifest.json](../../evaluation/stage2-manifest.json).
+1. Update only the approved fields in the versioned invoice corpus manifest.
 2. Set a case's `label_status` to `approved` only after its review is complete.
 3. Do not add reviewer or date keys to the manifest without first updating the typed `EvaluationCase` schema. The current schema rejects extra fields.
 4. Keep reviewer, date, authority, policy reference, rationale, and disagreement history in the approval record below or in a dated copy of it.
 5. Regenerate evidence:
 
    ```bash
-   uv run intellipay-evaluate --output evaluation/stage2-report.json
+   uv run intellipay-evaluate --output <corpus-report-path>
    uv run pytest -q
    uv run ruff check .
    uv run ruff format --check src tests
@@ -126,11 +144,11 @@ The finance approver verifies:
 
 Create a dated copy of this section for the actual review. One row is required per manifest case.
 
-**Review date:**  
-**Policy version or references:**  
-**Finance approver:**  
-**AP reviewer:**  
-**Engineering facilitator:**  
+- **Review date:**
+- **Policy version or references:**
+- **Finance approver:**
+- **AP reviewer:**
+- **Engineering facilitator:**
 
 | Case ID | Final outcome | Final findings | Payment expected | Status | Reviewer | Rationale or policy reference |
 |---|---|---|---:|---|---|---|
@@ -163,9 +181,9 @@ Create a dated copy of this section for the actual review. One row is required p
 
 ### Sign-Off
 
-**Finance decision:** Approved / Approved with limitations / Not approved  
-**Approved limitations:**  
-**Finance approver name:**  
-**Authority or role:**  
-**Approval date:**  
-**Signature or recorded approval reference:**  
+- **Finance decision:** Approved / Approved with limitations / Not approved
+- **Approved limitations:**
+- **Finance approver name:**
+- **Authority or role:**
+- **Approval date:**
+- **Signature or recorded approval reference:**

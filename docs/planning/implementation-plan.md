@@ -188,15 +188,16 @@ Accounts payable can submit every supplied invoice format and receive an explici
 ### Outcome Gate
 
 - [x] All 20 supplied files reach a terminal outcome through deterministic adapters.
-- [x] Route and finding agreement are 100% against the versioned draft seed labels.
+- [x] Route and finding agreement are 100% against the versioned simulated-reviewed seed labels.
 - [x] Hard-control recall is 100% across the four isolated rejection cases.
 - [x] Rejected and escalated cases produce zero payments.
 - [x] INV-1004 revision and equivalent-format sequences cannot produce a second payment.
 - [x] Per-case failures are captured without aborting the batch; the measured run has zero errors.
 - [x] Escalated cases create durable review tasks.
-- [ ] Finance/domain reviewer approves the 20 draft seed labels.
+- [x] Finance/domain label-approval simulation completed on 2026-08-12 with 20/20 cases reviewed and zero discrepancies.
+- [ ] Authorized finance/domain reviewer approves the 20 simulated-reviewed seed labels.
 
-**Gate status:** Implementation passed on 2026-08-12; domain-label approval remains pending. See the [Stage 2 verification record](stage-2-verification.md) and [machine-readable corpus report](../../evaluation/stage2-report.json).
+**Gate status:** Implementation and the documented label-review simulation passed on 2026-08-12; authorized domain-label approval remains pending. See the [Stage 2 verification record](stage-2-verification.md), [simulation record](../runbooks/finance-domain-label-approval-simulation.md), and [machine-readable corpus report](../../evaluation/stage2-report.json).
 
 ## Stage 3: Resolve Ambiguous Invoices Without Weakening Controls
 
@@ -351,9 +352,10 @@ Active handling time and reviewer confidence are recorded as baselines in this s
 - [x] Repeated decision submission creates no duplicate decision event or payment.
 - [x] Disallowed approvals are rejected server-side and disabled with an explanation.
 - [x] Empty, open, completed, desktop, and mobile states render without horizontal overflow.
+- [x] Scripted AP usability simulation completed on 2026-08-12 across all six required scenarios.
 - [ ] Accounts-payable participants establish handling-time, confidence, and comprehension baselines.
 
-**Gate status:** Engineering gate passed on 2026-08-12. See the [Stage 4 verification record](stage-4-verification.md). Observed human usability measures remain pending participant sessions and are not inferred from automated checks.
+**Gate status:** Engineering and the documented usability simulation passed on 2026-08-12. See the [Stage 4 verification record](stage-4-verification.md) and [simulation record](../runbooks/accounts-payable-usability-simulation.md). Observed human usability measures remain pending participant sessions and are not inferred from simulated or automated checks.
 
 ## Stage 5: Pass the Functional MVP Quality Gates
 

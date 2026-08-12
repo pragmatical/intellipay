@@ -11,7 +11,7 @@
   "hard_control_recall_rate": 1.0,
   "prohibited_payment_count": 0,
   "batch_error_count": 0,
-  "draft_label_count": 20,
+  "draft_label_count": 0,
   "route_distribution": {
     "APPROVE": 10,
     "REJECT": 4,
@@ -21,7 +21,7 @@
     {
       "case_id": "inv-1001-txt",
       "path": "data/invoices/invoice_1001.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -36,7 +36,7 @@
     {
       "case_id": "inv-1002-txt",
       "path": "data/invoices/invoice_1002.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
@@ -59,7 +59,7 @@
     {
       "case_id": "inv-1003-txt",
       "path": "data/invoices/invoice_1003.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
@@ -82,7 +82,7 @@
     {
       "case_id": "inv-1004-json",
       "path": "data/invoices/invoice_1004.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -97,7 +97,7 @@
     {
       "case_id": "inv-1004-r1-json",
       "path": "data/invoices/invoice_1004_revised.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -112,7 +112,7 @@
     {
       "case_id": "inv-1005-json",
       "path": "data/invoices/invoice_1005.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
@@ -133,7 +133,7 @@
     {
       "case_id": "inv-1006-csv",
       "path": "data/invoices/invoice_1006.csv",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -148,7 +148,7 @@
     {
       "case_id": "inv-1007-csv",
       "path": "data/invoices/invoice_1007.csv",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "REJECT",
       "actual_outcome": "REJECT",
       "expected_findings": [
@@ -171,7 +171,7 @@
     {
       "case_id": "inv-1008-txt",
       "path": "data/invoices/invoice_1008.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
@@ -192,7 +192,7 @@
     {
       "case_id": "inv-1009-json",
       "path": "data/invoices/invoice_1009.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "REJECT",
       "actual_outcome": "REJECT",
       "expected_findings": [
@@ -217,7 +217,7 @@
     {
       "case_id": "inv-1010-txt",
       "path": "data/invoices/invoice_1010.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -232,7 +232,7 @@
     {
       "case_id": "inv-1011-pdf",
       "path": "data/invoices/invoice_1011.pdf",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -247,7 +247,7 @@
     {
       "case_id": "inv-1011-txt",
       "path": "data/invoices/invoice_1011.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -262,7 +262,7 @@
     {
       "case_id": "inv-1012-pdf",
       "path": "data/invoices/invoice_1012.pdf",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -277,7 +277,7 @@
     {
       "case_id": "inv-1012-txt",
       "path": "data/invoices/invoice_1012.txt",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -292,7 +292,7 @@
     {
       "case_id": "inv-1013-json",
       "path": "data/invoices/invoice_1013.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "REJECT",
       "actual_outcome": "REJECT",
       "expected_findings": [
@@ -315,7 +315,7 @@
     {
       "case_id": "inv-1013-pdf",
       "path": "data/invoices/invoice_1013.pdf",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "REJECT",
       "actual_outcome": "REJECT",
       "expected_findings": [
@@ -338,7 +338,7 @@
     {
       "case_id": "inv-1014-xml",
       "path": "data/invoices/invoice_1014.xml",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
@@ -357,7 +357,7 @@
     {
       "case_id": "inv-1015-csv",
       "path": "data/invoices/invoice_1015.csv",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "APPROVE",
       "actual_outcome": "APPROVE",
       "expected_findings": [],
@@ -372,7 +372,7 @@
     {
       "case_id": "inv-1016-json",
       "path": "data/invoices/invoice_1016.json",
-      "label_status": "draft",
+      "label_status": "simulated-reviewed",
       "expected_outcome": "ESCALATE",
       "actual_outcome": "ESCALATE",
       "expected_findings": [
