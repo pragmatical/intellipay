@@ -9,7 +9,14 @@ from pathlib import Path
 from uuid import uuid4
 
 from intellipay.reasoning.models import InvoiceCandidate
-from intellipay.workflow.models import Finding, Outcome, PaymentStatus
+from intellipay.workflow.models import (
+    Finding,
+    Outcome,
+    PaymentStatus,
+    ReviewAction,
+    ReviewEvent,
+    ReviewTask,
+)
 
 MIGRATIONS = (
     (
@@ -66,7 +73,36 @@ MIGRATIONS = (
         );
         """,
     ),
+    (
+        4,
+        """
+        ALTER TABLE review_tasks ADD COLUMN priority TEXT NOT NULL DEFAULT 'NORMAL';
+        ALTER TABLE review_tasks ADD COLUMN updated_at TEXT;
+        ALTER TABLE review_tasks ADD COLUMN action TEXT;
+        ALTER TABLE review_tasks ADD COLUMN actor TEXT;
+        ALTER TABLE review_tasks ADD COLUMN rationale TEXT;
+        ALTER TABLE review_tasks ADD COLUMN completed_at TEXT;
+        UPDATE review_tasks SET updated_at = created_at WHERE updated_at IS NULL;
+        CREATE INDEX IF NOT EXISTS idx_review_tasks_status_created
+            ON review_tasks(status, created_at);
+        """,
+    ),
 )
+
+REVIEW_APPROVAL_BLOCKERS = {
+    "DUPLICATE_INVOICE",
+    "INSUFFICIENT_STOCK",
+    "INVOICE_VERSION_CONFLICT",
+    "INVALID_QUANTITY",
+    "INVALID_UNIT_PRICE",
+    "MISSING_REQUIRED_FIELD",
+    "MODEL_OUTPUT_INVALID",
+    "MODEL_UNAVAILABLE",
+    "REPAIR_EXHAUSTED",
+    "SUBTOTAL_MISMATCH",
+    "TOTAL_MISMATCH",
+    "UNSUPPORTED_CURRENCY",
+}
 
 
 class SQLiteStore:
@@ -130,18 +166,25 @@ class SQLiteStore:
                 (invoice.invoice_number, self._invoice_fingerprint(invoice), outcome, run_id),
             )
             if outcome is Outcome.ESCALATE:
+                now = self._now()
                 connection.execute(
                     """INSERT INTO review_tasks(
                         review_task_id, run_id, invoice_number,
-                        reason_codes, status, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?)""",
+                        reason_codes, status, priority, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         f"review_{uuid4().hex}",
                         run_id,
                         invoice.invoice_number,
                         json.dumps(sorted({finding.code for finding in findings})),
                         "OPEN",
-                        self._now(),
+                        (
+                            "HIGH"
+                            if any(finding.code == "HIGH_VALUE" for finding in findings)
+                            else "NORMAL"
+                        ),
+                        now,
+                        now,
                     ),
                 )
         self.record_event(
@@ -194,6 +237,71 @@ class SQLiteStore:
             row = connection.execute("SELECT COUNT(*) AS count FROM review_tasks").fetchone()
         return int(row["count"])
 
+    def list_review_tasks(self, status: str | None = None) -> list[ReviewTask]:
+        query = "SELECT * FROM review_tasks"
+        parameters: tuple[str, ...] = ()
+        if status:
+            query += " WHERE status = ?"
+            parameters = (status,)
+        query += " ORDER BY CASE priority WHEN 'HIGH' THEN 0 ELSE 1 END, created_at"
+        with self._connect() as connection:
+            rows = connection.execute(query, parameters).fetchall()
+        return [self._review_task(row) for row in rows]
+
+    def get_review_task(self, review_task_id: str) -> ReviewTask:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM review_tasks WHERE review_task_id = ?", (review_task_id,)
+            ).fetchone()
+        if row is None:
+            raise ValueError(f"Unknown review task {review_task_id}")
+        return self._review_task(row)
+
+    def decide_review(
+        self,
+        review_task_id: str,
+        *,
+        action: ReviewAction,
+        actor: str,
+        rationale: str,
+    ) -> ReviewTask:
+        actor = actor.strip()
+        rationale = rationale.strip()
+        if not actor or not rationale:
+            raise ValueError("Review actor and rationale are required")
+        task = self.get_review_task(review_task_id)
+        if action not in task.allowed_actions:
+            raise ValueError(f"Action {action} is not allowed for {review_task_id}")
+        if task.status == "COMPLETED":
+            if task.action == action and task.actor == actor and task.rationale == rationale:
+                return task
+            raise ValueError(f"Review task {review_task_id} is already completed")
+
+        now = self._now()
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """UPDATE review_tasks
+                SET status = 'COMPLETED', action = ?, actor = ?, rationale = ?,
+                    completed_at = ?, updated_at = ?
+                WHERE review_task_id = ? AND status = 'OPEN'""",
+                (action, actor, rationale, now, now, review_task_id),
+            )
+            if cursor.rowcount != 1:
+                raise ValueError(f"Review task {review_task_id} is no longer open")
+            connection.execute(
+                """INSERT INTO events(run_id, event_type, payload, created_at)
+                VALUES (?, 'review_decided', ?, ?)""",
+                (
+                    task.run_id,
+                    json.dumps(
+                        {"action": action, "actor": actor, "rationale": rationale},
+                        sort_keys=True,
+                    ),
+                    now,
+                ),
+            )
+        return self.get_review_task(review_task_id)
+
     def prior_invoice_relation(self, invoice: InvoiceCandidate, source_hash: str) -> str | None:
         with self._connect() as connection:
             rows = connection.execute(
@@ -227,6 +335,44 @@ class SQLiteStore:
                 (run_id,),
             ).fetchall()
         return [row["event_type"] for row in rows]
+
+    def events(self, run_id: str) -> list[ReviewEvent]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """SELECT event_type, payload, created_at
+                FROM events WHERE run_id = ? ORDER BY event_id""",
+                (run_id,),
+            ).fetchall()
+        return [
+            ReviewEvent(
+                event_type=row["event_type"],
+                payload=json.loads(row["payload"]),
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    @staticmethod
+    def _review_task(row: sqlite3.Row) -> ReviewTask:
+        reason_codes = json.loads(row["reason_codes"])
+        allowed_actions = [ReviewAction.REJECT, ReviewAction.REQUEST_CORRECTION]
+        if not REVIEW_APPROVAL_BLOCKERS.intersection(reason_codes):
+            allowed_actions.insert(0, ReviewAction.APPROVE)
+        return ReviewTask(
+            review_task_id=row["review_task_id"],
+            run_id=row["run_id"],
+            invoice_number=row["invoice_number"],
+            reason_codes=reason_codes,
+            status=row["status"],
+            priority=row["priority"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+            allowed_actions=allowed_actions,
+            action=row["action"],
+            actor=row["actor"],
+            rationale=row["rationale"],
+            completed_at=row["completed_at"],
+        )
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:

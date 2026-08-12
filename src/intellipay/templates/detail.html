@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}{{ case.task.invoice_number }} · IntelliPay{% endblock %}
+{% block content %}
+<main class="detail-shell">
+    <div class="case-heading">
+        <div>
+            <a class="back-link" href="/reviews">← Queue</a>
+            <div class="title-line">
+                <h1>{{ case.task.invoice_number }}</h1>
+                <b class="status {{ case.task.status | lower }}">{{ case.task.status }}</b>
+            </div>
+            <p>{{ case.invoice.vendor_name }} · {{ case.invoice.currency }} {{
+                "{:,.2f}".format(case.invoice.total_amount) }}</p>
+        </div>
+        <div class="run-meta">
+            <span>Run</span><code>{{ case.task.run_id }}</code>
+            <span>Source hash</span><code>{{ case.source_hash[:16] }}…</code>
+        </div>
+    </div>
+
+    <section class="reason-band" aria-labelledby="route-heading">
+        <div>
+            <p class="eyebrow">Why this stopped</p>
+            <h2 id="route-heading">Human review required</h2>
+        </div>
+        <div class="reason-codes">
+            {% for finding in case.findings %}
+            <div><strong>{{ finding.code | replace('_', ' ') }}</strong><span>{{ finding.message }}</span></div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="evidence-grid">
+        <section class="source-pane" aria-labelledby="source-heading">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Original evidence</p>
+                    <h2 id="source-heading">{{ case.document_id }}</h2>
+                </div>
+                <a class="text-link" href="/reviews/{{ case.task.review_task_id }}/source" target="_blank">Open source
+                    ↗</a>
+            </div>
+            {% if case.source_text %}
+            <pre>{{ case.source_text }}</pre>
+            {% else %}
+            <object data="/reviews/{{ case.task.review_task_id }}/source" type="application/pdf">
+                <a href="/reviews/{{ case.task.review_task_id }}/source" target="_blank">Open PDF source</a>
+            </object>
+            {% endif %}
+        </section>
+
+        <section class="facts-pane" aria-labelledby="facts-heading">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Normalized extraction · {{ case.extraction_assurance }}</p>
+                    <h2 id="facts-heading">Payment facts</h2>
+                </div>
+            </div>
+            <dl class="facts-list">
+                <div>
+                    <dt>Vendor</dt>
+                    <dd>{{ case.invoice.vendor_name }}</dd><small>Source: {{ case.document_id }}</small>
+                </div>
+                <div>
+                    <dt>Invoice number</dt>
+                    <dd>{{ case.invoice.invoice_number }}</dd><small>Source: {{ case.document_id }}</small>
+                </div>
+                <div>
+                    <dt>Invoice date</dt>
+                    <dd>{{ case.invoice.invoice_date }}</dd><small>Normalized from source date</small>
+                </div>
+                <div>
+                    <dt>Due date</dt>
+                    <dd>{{ case.invoice.due_date or 'Missing' }}</dd><small>Normalized from source due date</small>
+                </div>
+                <div>
+                    <dt>Terms</dt>
+                    <dd>{{ case.invoice.payment_terms or 'Missing' }}</dd><small>Source: {{ case.document_id }}</small>
+                </div>
+                <div>
+                    <dt>Total</dt>
+                    <dd>{{ case.invoice.currency }} {{ "{:,.2f}".format(case.invoice.total_amount) }}</dd>
+                    <small>Subtotal + tax + shipping revalidated</small>
+                </div>
+            </dl>
+            <div class="line-items">
+                <div class="line-row line-header"><span>Item</span><span>Qty</span><span>Unit</span><span>Line
+                        total</span></div>
+                {% for line in case.invoice.line_items %}
+                <div class="line-row"><span>{{ line.item }}</span><span>{{ line.quantity }}</span><span>{{
+                        "{:,.2f}".format(line.unit_price) }}</span><span>{{ "{:,.2f}".format(line.quantity *
+                        line.unit_price) }}</span></div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <div class="lower-grid">
+        <section class="policy-section">
+            <p class="eyebrow">Policy route</p>
+            <h2>Rules fired</h2>
+            <ul class="rule-list">{% for rule in case.policy_rules_fired %}<li>{{ rule | replace('_', ' ') }}</li>{%
+                endfor %}</ul>
+        </section>
+        <section class="timeline-section">
+            <p class="eyebrow">Audit history</p>
+            <h2>Run timeline</h2>
+            <ol class="timeline">{% for event in case.events %}<li><span></span>
+                    <div><strong>{{ event.event_type | replace('_', ' ') }}</strong><small>{{ event.created_at[:19] |
+                            replace('T', ' ') }} UTC</small></div>
+                </li>{% endfor %}</ol>
+        </section>
+    </div>
+
+    <section class="decision-band" aria-labelledby="decision-heading">
+        <div class="decision-copy">
+            <p class="eyebrow">Reviewer decision</p>
+            <h2 id="decision-heading">Constrained actions</h2>
+            {% if case.task.status == 'COMPLETED' %}
+            <p><strong>{{ case.task.action | replace('_', ' ') }}</strong> by {{ case.task.actor }} on {{
+                case.task.completed_at[:19] | replace('T', ' ') }} UTC</p>
+            <blockquote>{{ case.task.rationale }}</blockquote>
+            {% else %}
+            <p>Approval resumes this run through payment authorization. Reject and request correction finish without
+                payment.</p>
+            {% endif %}
+        </div>
+        {% if case.task.status == 'OPEN' %}
+        <form method="post" action="/reviews/{{ case.task.review_task_id }}/decision" class="decision-form">
+            <input type="hidden" name="csrf" value="{{ csrf_token }}">
+            <label for="rationale">Rationale <span>required</span></label>
+            <textarea id="rationale" name="rationale" minlength="10" maxlength="1000" required
+                placeholder="Record the evidence and policy basis for this decision."></textarea>
+            <div class="action-row">
+                {% for action in all_actions %}
+                {% set enabled = action in case.task.allowed_actions %}
+                <button type="submit" name="action" value="{{ action }}" class="action-{{ action | lower }}" {{ '' if
+                    enabled else 'disabled' }}
+                    title="{{ '' if enabled else 'Blocked by a non-overridable control finding' }}">
+                    {{ action | replace('_', ' ') }}
+                </button>
+                {% endfor %}
+            </div>
+            {% if 'APPROVE' not in case.task.allowed_actions %}<p class="disabled-note">Approval is unavailable because
+                a non-overridable control finding remains.</p>{% endif %}
+        </form>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

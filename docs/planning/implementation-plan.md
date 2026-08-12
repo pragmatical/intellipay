@@ -344,7 +344,16 @@ Active handling time and reviewer confidence are recorded as baselines in this s
 
 ### Outcome Gate
 
-The review workflow operates end to end, interrupt and resume tests pass, telemetry is sufficient to reconstruct each supplied case, and a short usability check identifies no blocking comprehension or action errors.
+- [x] Escalated invoices enter a durable prioritized review queue.
+- [x] Source evidence, normalized fields, findings, policy rules, and event history are visible without raw logs.
+- [x] Authenticated actions record actor, rationale, disposition, and timestamps.
+- [x] LangGraph interrupt and resume continue the same run through existing payment controls.
+- [x] Repeated decision submission creates no duplicate decision event or payment.
+- [x] Disallowed approvals are rejected server-side and disabled with an explanation.
+- [x] Empty, open, completed, desktop, and mobile states render without horizontal overflow.
+- [ ] Accounts-payable participants establish handling-time, confidence, and comprehension baselines.
+
+**Gate status:** Engineering gate passed on 2026-08-12. See the [Stage 4 verification record](stage-4-verification.md). Observed human usability measures remain pending participant sessions and are not inferred from automated checks.
 
 ## Stage 5: Pass the Functional MVP Quality Gates
 

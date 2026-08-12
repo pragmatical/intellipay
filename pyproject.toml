@@ -9,6 +9,8 @@ description = "Controlled, agent-assisted invoice processing"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.116,<1",
+    "jinja2>=3.1,<4",
     "langgraph>=0.6,<2",
     "langgraph-checkpoint-sqlite>=3.0,<4",
     "openai>=1.99,<3",
@@ -16,12 +18,15 @@ dependencies = [
     "pypdfium2>=4.30,<5",
     "pydantic>=2.11,<3",
     "pydantic-settings>=2.10,<3",
+    "python-multipart>=0.0.20,<1",
     "rapidocr-onnxruntime>=1.4,<2",
+    "uvicorn>=0.35,<1",
 ]
 
 [project.scripts]
 intellipay = "intellipay.cli:main"
 intellipay-evaluate = "intellipay.evaluation:main"
+intellipay-review = "intellipay.review_app:main"
 
 [dependency-groups]
 dev = ["pytest>=8.4,<9", "pytest-cov>=6.2,<8", "ruff>=0.12,<1"]

@@ -4,7 +4,7 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** Stages 1 through 3 are implemented and verified. The complete supplied corpus is controlled deterministically, while ambiguous extraction now has typed critique, one bounded repair, redacted attempt traces, safe outage and invalid-output escalation, prompt-injection protection, and offline local/mocked-live provider parity. Finance/domain label approval and the Stage 4 reviewer workflow remain next.
+> **Current status:** Stages 1 through 4 are implemented and engineering-verified. The complete supplied corpus is controlled deterministically, ambiguous extraction is bounded and safely traced, and escalations now pause for authenticated, policy-constrained human review before the same checkpoint resumes. Finance/domain label approval and observed reviewer timing and confidence baselines remain external follow-up work.
 
 ## Run the Reasoning Slice
 
@@ -31,6 +31,19 @@ Live mode calls the configurable xAI endpoint, currently `https://api.x.ai/v1`, 
 uv run pytest tests/reasoning/test_providers.py
 XAI_API_KEY=... uv run pytest tests/reasoning/test_grok_live.py -m live
 ```
+
+## Run the Review Interface
+
+Process an invoice that requires review, configure a local reviewer identity, and start the server:
+
+```bash
+uv run intellipay data/invoices/invoice_1002.txt
+export INTELLIPAY_REVIEWER_USERNAME=reviewer
+export INTELLIPAY_REVIEWER_PASSWORD='replace-with-a-local-password'
+uv run intellipay-review --host 0.0.0.0 --port 8000
+```
+
+Open `http://localhost:8000/reviews` and authenticate with those credentials. The interface shows the durable queue, original source, normalized payment facts, findings, rules, event timeline, constrained actions, and completed decision history. HTTP Basic authentication is a prototype boundary; production identity and delegated authority integration remain deferred.
 
 ## Solution Overview
 
@@ -77,7 +90,7 @@ Approval is not itself payment authorization. An approved invoice must still pas
 
 ## Intended User Experience
 
-The primary application entry point will accept a local invoice and return a concise structured result while persisting a complete trace:
+The primary application entry point accepts a local invoice and returns a structured result while persisting a complete trace:
 
 ```bash
 python main.py --invoice_path=data/invoices/invoice_1001.txt
@@ -95,7 +108,7 @@ python main.py --invoice_path=data/invoices/invoice_1001.txt
 }
 ```
 
-The review experience will show the source document, normalized fields, confidence and evidence, validation findings, policy rules, revision history, and the actions currently permitted. Reviewers should not need to inspect application logs to understand why a case was routed to them.
+The review experience shows the source document, normalized fields and evidence, validation findings, policy rules, event history, and the actions currently permitted. Reviewers do not need application logs to understand why a case was routed to them.
 
 ## Core Design Principles
 

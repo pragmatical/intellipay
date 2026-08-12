@@ -7,8 +7,10 @@ from time import perf_counter
 from typing import TypedDict
 from uuid import uuid4
 
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Command, interrupt
 
 from intellipay.config import Settings
 from intellipay.parsing import ParserRegistry
@@ -27,6 +29,8 @@ from intellipay.workflow.models import (
     Outcome,
     PaymentStatus,
     ReasoningTraceEntry,
+    ReviewAction,
+    ReviewCase,
     WorkflowResult,
 )
 from intellipay.workflow.storage import SQLiteStore
@@ -52,6 +56,7 @@ class WorkflowState(TypedDict, total=False):
     payment_status: PaymentStatus
     payment_id: str | None
     payment_replayed: bool
+    review_action: ReviewAction | None
 
 
 class InvoiceWorkflow:
@@ -110,6 +115,97 @@ class InvoiceWorkflow:
             raise ValueError(f"No checkpoint exists for run {run_id}")
         return self._to_result(final)
 
+    def resolve_review(
+        self,
+        review_task_id: str,
+        *,
+        action: ReviewAction,
+        actor: str,
+        rationale: str,
+    ) -> WorkflowResult:
+        existing = self._store.get_review_task(review_task_id)
+        task = self._store.decide_review(
+            review_task_id,
+            action=action,
+            actor=actor,
+            rationale=rationale,
+        )
+        if existing.status == "COMPLETED":
+            snapshot = self._graph.get_state(self._config(task.run_id))
+            if not snapshot.values:
+                raise ValueError(f"No checkpoint exists for run {task.run_id}")
+            if "human_review" in snapshot.next:
+                final = self._graph.invoke(
+                    Command(resume={"action": task.action}),
+                    config=self._config(task.run_id),
+                )
+                if not final:
+                    raise RuntimeError(f"Review did not resume run {task.run_id}")
+                self._store.complete_run(
+                    task.run_id,
+                    final["invoice"],
+                    final["outcome"],
+                    final["findings"],
+                )
+                return self._to_result(final)
+            return self._to_result(snapshot.values)
+        final = self._graph.invoke(
+            Command(resume={"action": action}),
+            config=self._config(task.run_id),
+        )
+        if not final:
+            raise RuntimeError(f"Review did not resume run {task.run_id}")
+        self._store.complete_run(
+            task.run_id,
+            final["invoice"],
+            final["outcome"],
+            final["findings"],
+        )
+        return self._to_result(final)
+
+    def review_case(self, review_task_id: str) -> ReviewCase:
+        task = self._store.get_review_task(review_task_id)
+        snapshot = self._graph.get_state(self._config(task.run_id))
+        if not snapshot.values:
+            raise ValueError(f"No checkpoint exists for run {task.run_id}")
+        state = snapshot.values
+        document_id = state["document_id"]
+        source_text = None if Path(document_id).suffix.lower() == ".pdf" else state["content"]
+        extraction_event = next(
+            (
+                event
+                for event in self._store.events(task.run_id)
+                if event.event_type == "invoice_extracted"
+            ),
+            None,
+        )
+        extraction_assurance = (
+            "Deterministic adapter"
+            if extraction_event and extraction_event.payload.get("provider") == "deterministic"
+            else "Schema-validated reasoning"
+        )
+        return ReviewCase(
+            task=task,
+            document_id=document_id,
+            source_hash=state["source_hash"],
+            source_text=source_text,
+            extraction_assurance=extraction_assurance,
+            invoice=state["invoice"],
+            findings=state["findings"],
+            extraction_defects=state["extraction_defects"],
+            policy_rules_fired=state["policy_rules_fired"],
+            reasoning_trace=state["reasoning_trace"],
+            events=self._store.events(task.run_id),
+        )
+
+    def review_source(self, review_task_id: str) -> tuple[str, bytes]:
+        task = self._store.get_review_task(review_task_id)
+        snapshot = self._graph.get_state(self._config(task.run_id))
+        if not snapshot.values:
+            raise ValueError(f"No checkpoint exists for run {task.run_id}")
+        state = snapshot.values
+        return state["document_id"], b64decode(state["source_base64"])
+
     def _to_result(self, final: WorkflowState) -> WorkflowResult:
         run_id = final["run_id"]
         return WorkflowResult(
@@ -139,6 +235,7 @@ class InvoiceWorkflow:
         builder.add_node("repair_extraction", self._repair_extraction)
         builder.add_node("decide", self._decide)
         builder.add_node("critique_decision", self._critique_decision)
+        builder.add_node("human_review", self._human_review)
         builder.add_node("authorize_payment", self._authorize_payment)
         builder.add_node("pay", self._pay)
         builder.add_edge(START, "extract")
@@ -154,11 +251,31 @@ class InvoiceWorkflow:
         builder.add_conditional_edges(
             "critique_decision",
             self._route_after_decision,
+            {"authorize": "authorize_payment", "review": "human_review", "finish": END},
+        )
+        builder.add_conditional_edges(
+            "human_review",
+            self._route_after_review,
             {"authorize": "authorize_payment", "finish": END},
         )
         builder.add_edge("authorize_payment", "pay")
         builder.add_edge("pay", END)
-        return builder.compile(checkpointer=SqliteSaver(self._checkpoint_connection))
+        serializer = JsonPlusSerializer(
+            allowed_msgpack_modules=[
+                ("intellipay.reasoning.models", "Currency"),
+                ("intellipay.reasoning.models", "ExtractionDefect"),
+                ("intellipay.reasoning.models", "InvoiceCandidate"),
+                ("intellipay.reasoning.models", "LineItem"),
+                ("intellipay.workflow.models", "Finding"),
+                ("intellipay.workflow.models", "Outcome"),
+                ("intellipay.workflow.models", "PaymentStatus"),
+                ("intellipay.workflow.models", "ReasoningTraceEntry"),
+                ("intellipay.workflow.models", "ReviewAction"),
+            ]
+        )
+        return builder.compile(
+            checkpointer=SqliteSaver(self._checkpoint_connection, serde=serializer)
+        )
 
     def _extract(self, state: WorkflowState) -> dict[str, object]:
         path = Path(state["document_id"])
@@ -299,6 +416,36 @@ class InvoiceWorkflow:
         return {
             "payment_authorized": authorized,
             "policy_rules_fired": [*state["policy_rules_fired"], "PAYMENT_AUTHORIZED"],
+        }
+
+    def _human_review(self, state: WorkflowState) -> dict[str, object]:
+        decision = interrupt(
+            {
+                "run_id": state["run_id"],
+                "invoice_number": state["invoice"].invoice_number,
+                "finding_codes": [finding.code for finding in state["findings"]],
+            }
+        )
+        action = ReviewAction(decision["action"])
+        if action is ReviewAction.APPROVE:
+            return {
+                "outcome": Outcome.APPROVE,
+                "findings": [],
+                "review_action": action,
+                "policy_rules_fired": [
+                    *state["policy_rules_fired"],
+                    "HUMAN_REVIEW_APPROVED",
+                ],
+            }
+        policy_rule = (
+            "HUMAN_REVIEW_REJECTED"
+            if action is ReviewAction.REJECT
+            else "HUMAN_CORRECTION_REQUESTED"
+        )
+        return {
+            "outcome": Outcome.REJECT,
+            "review_action": action,
+            "policy_rules_fired": [*state["policy_rules_fired"], policy_rule],
         }
 
     def _critique_decision(self, state: WorkflowState) -> dict[str, object]:
@@ -457,6 +604,12 @@ class InvoiceWorkflow:
 
     @staticmethod
     def _route_after_decision(state: WorkflowState) -> str:
+        if state["outcome"] is Outcome.APPROVE:
+            return "authorize"
+        return "review" if state["outcome"] is Outcome.ESCALATE else "finish"
+
+    @staticmethod
+    def _route_after_review(state: WorkflowState) -> str:
         return "authorize" if state["outcome"] is Outcome.APPROVE else "finish"
 
     def _route_after_validation(self, state: WorkflowState) -> str:

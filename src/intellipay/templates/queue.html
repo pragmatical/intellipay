@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Review queue · IntelliPay{% endblock %}
+{% block content %}
+<main class="queue-shell">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">Accounts payable</p>
+            <h1>Exception queue</h1>
+        </div>
+        <nav class="tabs" aria-label="Queue status">
+            {% for value, label in [('OPEN', 'Open'), ('COMPLETED', 'Completed'), ('ALL', 'All')] %}
+            <a href="/reviews?status={{ value }}" class="{{ 'active' if queue_status == value else '' }}">{{ label
+                }}</a>
+            {% endfor %}
+        </nav>
+    </div>
+
+    {% if tasks %}
+    <div class="queue-table" role="table" aria-label="Invoice reviews">
+        <div class="queue-row queue-header" role="row">
+            <span>Invoice</span><span>Reasons</span><span>Priority</span><span>Status</span><span></span>
+        </div>
+        {% for task in tasks %}
+        <a class="queue-row" href="/reviews/{{ task.review_task_id }}" role="row">
+            <span class="invoice-cell"><strong>{{ task.invoice_number }}</strong><small>{{ task.created_at[:10]
+                    }}</small></span>
+            <span class="reason-list">{{ task.reason_codes | join(' · ') }}</span>
+            <span><b class="priority {{ task.priority | lower }}">{{ task.priority }}</b></span>
+            <span><b class="status {{ task.status | lower }}">{{ task.status }}</b></span>
+            <span class="row-arrow" aria-hidden="true">→</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <section class="empty-state">
+        <span class="empty-check">✓</span>
+        <h2>No {{ queue_status | lower }} reviews</h2>
+        <p>The queue is clear for this view.</p>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

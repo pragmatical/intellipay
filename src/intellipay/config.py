@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     xai_model: str = "grok-4.6"
     xai_timeout_seconds: float = 30.0
     max_extraction_repair_attempts: int = Field(default=1, ge=0, le=3)
+    reviewer_username: str = "reviewer"
+    reviewer_password: SecretStr | None = None
 
     @field_validator("xai_api_key", mode="before")
     @classmethod

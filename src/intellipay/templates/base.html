@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}IntelliPay Review{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/review.css') }}">
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" href="/reviews" aria-label="IntelliPay review queue">
+            <span class="brand-mark">IP</span>
+            <span>IntelliPay</span>
+        </a>
+        <span class="environment">Controlled review</span>
+    </header>
+    {% block content %}{% endblock %}
+</body>
+
+</html>

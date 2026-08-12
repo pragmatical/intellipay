@@ -17,6 +17,12 @@ class PaymentStatus(StrEnum):
     SUCCESS = "SUCCESS"
 
 
+class ReviewAction(StrEnum):
+    APPROVE = "APPROVE"
+    REJECT = "REJECT"
+    REQUEST_CORRECTION = "REQUEST_CORRECTION"
+
+
 class Finding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -37,6 +43,48 @@ class ReasoningTraceEntry(BaseModel):
     request_fingerprint: str
     token_usage: int | None = Field(default=None, ge=0)
     error_type: str | None = None
+
+
+class ReviewTask(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    review_task_id: str
+    run_id: str
+    invoice_number: str
+    reason_codes: list[str]
+    status: str
+    priority: str
+    created_at: str
+    updated_at: str
+    allowed_actions: list[ReviewAction]
+    action: ReviewAction | None = None
+    actor: str | None = None
+    rationale: str | None = None
+    completed_at: str | None = None
+
+
+class ReviewEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_type: str
+    payload: dict[str, object]
+    created_at: str
+
+
+class ReviewCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    task: ReviewTask
+    document_id: str
+    source_hash: str
+    source_text: str | None
+    extraction_assurance: str
+    invoice: InvoiceCandidate
+    findings: list[Finding]
+    extraction_defects: list[ExtractionDefect]
+    policy_rules_fired: list[str]
+    reasoning_trace: list[ReasoningTraceEntry]
+    events: list[ReviewEvent]
 
 
 class WorkflowResult(BaseModel):
