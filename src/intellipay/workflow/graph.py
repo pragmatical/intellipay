@@ -1,6 +1,9 @@
+import re
 import sqlite3
+from base64 import b64decode, b64encode
 from hashlib import sha256
 from pathlib import Path
+from time import perf_counter
 from typing import TypedDict
 from uuid import uuid4
 
@@ -8,15 +11,24 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 
 from intellipay.config import Settings
+from intellipay.parsing import ParserRegistry
 from intellipay.reasoning import ReasoningProvider, create_reasoning_provider
 from intellipay.reasoning.models import (
+    DecisionCritique,
+    DecisionCritiqueRequest,
     ExtractionCritiqueRequest,
     ExtractionDefect,
     ExtractionRepairRequest,
     ExtractionRequest,
     InvoiceCandidate,
 )
-from intellipay.workflow.models import Finding, Outcome, PaymentStatus, WorkflowResult
+from intellipay.workflow.models import (
+    Finding,
+    Outcome,
+    PaymentStatus,
+    ReasoningTraceEntry,
+    WorkflowResult,
+)
 from intellipay.workflow.storage import SQLiteStore
 from intellipay.workflow.validation import validate_invoice
 
@@ -26,10 +38,13 @@ class WorkflowState(TypedDict, total=False):
     source_hash: str
     document_id: str
     content: str
+    source_base64: str
     invoice: InvoiceCandidate
     findings: list[Finding]
     extraction_defects: list[ExtractionDefect]
     repair_attempts: int
+    reasoning_failure: str | None
+    reasoning_trace: list[ReasoningTraceEntry]
     inventory_snapshot: dict[str, str]
     policy_rules_fired: list[str]
     payment_authorized: bool
@@ -45,10 +60,12 @@ class InvoiceWorkflow:
         settings: Settings,
         provider: ReasoningProvider | None = None,
         store: SQLiteStore | None = None,
+        parsers: ParserRegistry | None = None,
     ) -> None:
         self._settings = settings
         self._provider = provider or create_reasoning_provider(settings)
         self._store = store or SQLiteStore(settings.database_path)
+        self._parsers = parsers or ParserRegistry()
         self._store.initialize()
         self._checkpoint_connection = sqlite3.connect(
             settings.database_path, check_same_thread=False
@@ -56,8 +73,9 @@ class InvoiceWorkflow:
         self._graph = self._build_graph()
 
     def process(self, path: Path) -> WorkflowResult:
-        content = path.read_text(encoding="utf-8")
-        source_hash = sha256(content.encode()).hexdigest()
+        source = path.read_bytes()
+        content = source.decode("utf-8", errors="replace")
+        source_hash = sha256(source).hexdigest()
         run_id = f"run_{uuid4().hex}"
         self._store.create_run(run_id, source_hash, self._settings.reasoning_mode)
         inventory_snapshot = self._store.inventory()
@@ -67,10 +85,13 @@ class InvoiceWorkflow:
                 "source_hash": source_hash,
                 "document_id": path.name,
                 "content": content,
+                "source_base64": b64encode(source).decode("ascii"),
                 "payment_status": PaymentStatus.NOT_ATTEMPTED,
                 "payment_replayed": False,
                 "extraction_defects": [],
                 "repair_attempts": 0,
+                "reasoning_failure": None,
+                "reasoning_trace": [],
                 "inventory_snapshot": inventory_snapshot,
                 "policy_rules_fired": [],
                 "payment_authorized": False,
@@ -100,6 +121,7 @@ class InvoiceWorkflow:
             findings=final["findings"],
             extraction_defects=final["extraction_defects"],
             repair_attempts=final["repair_attempts"],
+            reasoning_trace=final["reasoning_trace"],
             inventory_snapshot=final["inventory_snapshot"],
             policy_rules_fired=final["policy_rules_fired"],
             event_types=self._store.event_types(run_id),
@@ -116,6 +138,7 @@ class InvoiceWorkflow:
         builder.add_node("critique_extraction", self._critique_extraction)
         builder.add_node("repair_extraction", self._repair_extraction)
         builder.add_node("decide", self._decide)
+        builder.add_node("critique_decision", self._critique_decision)
         builder.add_node("authorize_payment", self._authorize_payment)
         builder.add_node("pay", self._pay)
         builder.add_edge(START, "extract")
@@ -127,8 +150,9 @@ class InvoiceWorkflow:
         )
         builder.add_edge("critique_extraction", "repair_extraction")
         builder.add_edge("repair_extraction", "validate")
+        builder.add_edge("decide", "critique_decision")
         builder.add_conditional_edges(
-            "decide",
+            "critique_decision",
             self._route_after_decision,
             {"authorize": "authorize_payment", "finish": END},
         )
@@ -137,18 +161,98 @@ class InvoiceWorkflow:
         return builder.compile(checkpointer=SqliteSaver(self._checkpoint_connection))
 
     def _extract(self, state: WorkflowState) -> dict[str, object]:
-        result = self._provider.extract_invoice(
-            ExtractionRequest(document_id=state["document_id"], content=state["content"])
+        path = Path(state["document_id"])
+        has_ambiguous_money = (
+            path.suffix.lower() == ".txt"
+            and "Invoice Number:" in state["content"]
+            and "Vendor:" in state["content"]
+            and re.search(r"\$[\d,O.]*O[\d,O.]*", state["content"])
+        )
+        if self._parsers.supports(path) and not has_ambiguous_money:
+            candidate = self._parsers.parse(path, b64decode(state["source_base64"]))
+            self._store.record_event(
+                state["run_id"],
+                "invoice_extracted",
+                {"provider": "deterministic", "model": f"{path.suffix[1:]}-v1"},
+            )
+            return {"invoice": candidate}
+        request = ExtractionRequest(document_id=state["document_id"], content=state["content"])
+        started = perf_counter()
+        try:
+            result = self._provider.extract_invoice(request)
+            candidate = InvoiceCandidate.model_validate(result.candidate)
+        except Exception as error:
+            if not self._parsers.supports(path):
+                raise
+            candidate = self._parsers.parse(path, b64decode(state["source_base64"]))
+            trace = self._reasoning_trace(
+                operation="extract",
+                attempt=0,
+                status="FAILED_FALLBACK",
+                request=request,
+                started=started,
+                error=error,
+            )
+            self._store.record_event(
+                state["run_id"],
+                "reasoning_failed",
+                trace.model_dump(mode="json"),
+            )
+            return {
+                "invoice": candidate,
+                "reasoning_failure": self._reasoning_failure_code(error),
+                "reasoning_trace": [*state["reasoning_trace"], trace],
+            }
+        trace = self._reasoning_trace(
+            operation="extract",
+            attempt=0,
+            status="SUCCEEDED",
+            request=request,
+            started=started,
+            model=result.model,
         )
         self._store.record_event(
             state["run_id"],
             "invoice_extracted",
             {"provider": result.provider, "model": result.model},
         )
-        return {"invoice": result.candidate}
+        return {
+            "invoice": candidate,
+            "reasoning_trace": [*state["reasoning_trace"], trace],
+        }
 
     def _validate(self, state: WorkflowState) -> dict[str, object]:
         findings = validate_invoice(state["invoice"], state["inventory_snapshot"])
+        if state.get("reasoning_failure"):
+            findings.append(
+                Finding(
+                    code=state["reasoning_failure"],
+                    message="Reasoning did not produce a verified extraction",
+                )
+            )
+        repairable = {"SUBTOTAL_MISMATCH", "TOTAL_MISMATCH"}
+        finding_codes = {finding.code for finding in findings}
+        if (
+            finding_codes & repairable
+            and state["repair_attempts"] >= self._settings.max_extraction_repair_attempts
+            and not state.get("reasoning_failure")
+        ):
+            findings.append(
+                Finding(
+                    code="REPAIR_EXHAUSTED",
+                    message="Extraction defects remain after the configured repair limit",
+                )
+            )
+        prior_relation = self._store.prior_invoice_relation(state["invoice"], state["source_hash"])
+        if prior_relation:
+            findings.append(
+                Finding(
+                    code=prior_relation,
+                    message=(
+                        f"A different document already exists for {state['invoice'].invoice_number}"
+                    ),
+                )
+            )
         self._store.record_event(
             state["run_id"],
             "invoice_validated",
@@ -157,8 +261,31 @@ class InvoiceWorkflow:
         return {"findings": findings}
 
     def _decide(self, state: WorkflowState) -> dict[str, object]:
-        outcome = Outcome.REJECT if state["findings"] else Outcome.APPROVE
-        policy_rules = ["HARD_FINDING_REJECT"] if state["findings"] else ["NO_HARD_FINDINGS"]
+        hard_findings = {
+            "INVALID_QUANTITY",
+            "INVALID_UNIT_PRICE",
+            "MISSING_REQUIRED_FIELD",
+            "SUBTOTAL_MISMATCH",
+            "TOTAL_MISMATCH",
+        }
+        finding_codes = {finding.code for finding in state["findings"]}
+        reasoning_escalations = {
+            "MODEL_UNAVAILABLE",
+            "MODEL_OUTPUT_INVALID",
+            "REPAIR_EXHAUSTED",
+        }
+        if finding_codes & reasoning_escalations:
+            outcome = Outcome.ESCALATE
+            policy_rules = ["REASONING_UNCERTAINTY_ESCALATE"]
+        elif finding_codes & hard_findings:
+            outcome = Outcome.REJECT
+            policy_rules = ["HARD_FINDING_REJECT"]
+        elif finding_codes:
+            outcome = Outcome.ESCALATE
+            policy_rules = ["REVIEW_FINDING_ESCALATE"]
+        else:
+            outcome = Outcome.APPROVE
+            policy_rules = ["NO_HARD_FINDINGS"]
         self._store.record_event(
             state["run_id"],
             "invoice_decided",
@@ -174,34 +301,140 @@ class InvoiceWorkflow:
             "policy_rules_fired": [*state["policy_rules_fired"], "PAYMENT_AUTHORIZED"],
         }
 
-    def _critique_extraction(self, state: WorkflowState) -> dict[str, object]:
-        critique = self._provider.critique_extraction(
-            ExtractionCritiqueRequest(
-                candidate=state["invoice"],
-                finding_codes=[finding.code for finding in state["findings"]],
+    def _critique_decision(self, state: WorkflowState) -> dict[str, object]:
+        finding_codes = [finding.code for finding in state["findings"]]
+        if "HIGH_VALUE" not in finding_codes:
+            return {}
+        request = DecisionCritiqueRequest(
+            invoice_number=state["invoice"].invoice_number,
+            proposed_outcome=state["outcome"],
+            findings=finding_codes,
+        )
+        started = perf_counter()
+        try:
+            result = self._provider.critique_decision(request)
+            critique = DecisionCritique.model_validate(result.critique)
+        except Exception as error:
+            trace = self._reasoning_trace(
+                operation="critique_decision",
+                attempt=0,
+                status="FAILED_DETERMINISTIC_ROUTE_PRESERVED",
+                request=request,
+                started=started,
+                error=error,
             )
+            self._store.record_event(
+                state["run_id"], "reasoning_failed", trace.model_dump(mode="json")
+            )
+            return {"reasoning_trace": [*state["reasoning_trace"], trace]}
+        trace = self._reasoning_trace(
+            operation="critique_decision",
+            attempt=0,
+            status="SUCCEEDED_ROUTE_PRESERVED",
+            request=request,
+            started=started,
+            model=result.model,
+        )
+        self._store.record_event(
+            state["run_id"],
+            "decision_critiqued",
+            {
+                "accept_recommendation": critique.accept_recommendation,
+                "defect_count": len(critique.defects),
+                "outcome_preserved": state["outcome"],
+            },
+        )
+        return {"reasoning_trace": [*state["reasoning_trace"], trace]}
+
+    def _critique_extraction(self, state: WorkflowState) -> dict[str, object]:
+        request = ExtractionCritiqueRequest(
+            candidate=state["invoice"],
+            finding_codes=[finding.code for finding in state["findings"]],
+        )
+        started = perf_counter()
+        try:
+            critique = self._provider.critique_extraction(request)
+            defects = [ExtractionDefect.model_validate(defect) for defect in critique.defects]
+        except Exception as error:
+            trace = self._reasoning_trace(
+                operation="critique_extraction",
+                attempt=state["repair_attempts"],
+                status="FAILED",
+                request=request,
+                started=started,
+                error=error,
+            )
+            self._store.record_event(
+                state["run_id"], "reasoning_failed", trace.model_dump(mode="json")
+            )
+            return {
+                "reasoning_failure": self._reasoning_failure_code(error),
+                "reasoning_trace": [*state["reasoning_trace"], trace],
+            }
+        trace = self._reasoning_trace(
+            operation="critique_extraction",
+            attempt=state["repair_attempts"],
+            status="SUCCEEDED",
+            request=request,
+            started=started,
         )
         self._store.record_event(
             state["run_id"],
             "extraction_critiqued",
-            {"defect_codes": [defect.code for defect in critique.defects]},
+            {"defect_codes": [defect.code for defect in defects]},
         )
-        return {"extraction_defects": critique.defects}
+        return {
+            "extraction_defects": defects,
+            "reasoning_trace": [*state["reasoning_trace"], trace],
+        }
 
     def _repair_extraction(self, state: WorkflowState) -> dict[str, object]:
         attempt = state["repair_attempts"] + 1
-        result = self._provider.repair_invoice(
-            ExtractionRepairRequest(
-                extraction=ExtractionRequest(
-                    document_id=state["document_id"], content=state["content"]
-                ),
-                candidate=state["invoice"],
-                defects=state["extraction_defects"],
+        if state.get("reasoning_failure"):
+            return {"repair_attempts": attempt}
+        request = ExtractionRepairRequest(
+            extraction=ExtractionRequest(
+                document_id=state["document_id"], content=state["content"]
+            ),
+            candidate=state["invoice"],
+            defects=state["extraction_defects"],
+            attempt=attempt,
+        )
+        started = perf_counter()
+        try:
+            result = self._provider.repair_invoice(request)
+            candidate = InvoiceCandidate.model_validate(result.candidate)
+        except Exception as error:
+            trace = self._reasoning_trace(
+                operation="repair_extraction",
                 attempt=attempt,
+                status="FAILED",
+                request=request,
+                started=started,
+                error=error,
             )
+            self._store.record_event(
+                state["run_id"], "reasoning_failed", trace.model_dump(mode="json")
+            )
+            return {
+                "repair_attempts": attempt,
+                "reasoning_failure": self._reasoning_failure_code(error),
+                "reasoning_trace": [*state["reasoning_trace"], trace],
+            }
+        trace = self._reasoning_trace(
+            operation="repair_extraction",
+            attempt=attempt,
+            status="SUCCEEDED",
+            request=request,
+            started=started,
+            model=result.model,
         )
         self._store.record_event(state["run_id"], "extraction_repaired", {"attempt": attempt})
-        return {"invoice": result.candidate, "repair_attempts": attempt}
+        return {
+            "invoice": candidate,
+            "repair_attempts": attempt,
+            "reasoning_trace": [*state["reasoning_trace"], trace],
+        }
 
     def _pay(self, state: WorkflowState) -> dict[str, object]:
         if not state["payment_authorized"]:
@@ -226,14 +459,49 @@ class InvoiceWorkflow:
     def _route_after_decision(state: WorkflowState) -> str:
         return "authorize" if state["outcome"] is Outcome.APPROVE else "finish"
 
-    @staticmethod
-    def _route_after_validation(state: WorkflowState) -> str:
+    def _route_after_validation(self, state: WorkflowState) -> str:
         repairable = {"SUBTOTAL_MISMATCH", "TOTAL_MISMATCH"}
         finding_codes = {finding.code for finding in state["findings"]}
         return (
             "repair"
-            if finding_codes and finding_codes <= repairable and state["repair_attempts"] == 0
+            if finding_codes
+            and finding_codes <= repairable
+            and state["repair_attempts"] < self._settings.max_extraction_repair_attempts
             else "decide"
+        )
+
+    def _reasoning_trace(
+        self,
+        *,
+        operation: str,
+        attempt: int,
+        status: str,
+        request: object,
+        started: float,
+        model: str | None = None,
+        error: Exception | None = None,
+    ) -> ReasoningTraceEntry:
+        request_json = (
+            request.model_dump_json() if hasattr(request, "model_dump_json") else repr(request)
+        )
+        return ReasoningTraceEntry(
+            operation=operation,
+            attempt=attempt,
+            status=status,
+            provider=self._settings.reasoning_mode,
+            model=model,
+            prompt_version="reasoning-v1",
+            latency_ms=max(0, round((perf_counter() - started) * 1000)),
+            request_fingerprint=sha256(request_json.encode()).hexdigest(),
+            error_type=type(error).__name__ if error else None,
+        )
+
+    @staticmethod
+    def _reasoning_failure_code(error: Exception) -> str:
+        return (
+            "MODEL_OUTPUT_INVALID"
+            if error.__class__.__module__.startswith("pydantic")
+            else "MODEL_UNAVAILABLE"
         )
 
     @staticmethod

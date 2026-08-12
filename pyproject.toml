@@ -12,15 +12,26 @@ dependencies = [
     "langgraph>=0.6,<2",
     "langgraph-checkpoint-sqlite>=3.0,<4",
     "openai>=1.99,<3",
+    "opencv-python-headless>=4.10,<5",
+    "pypdfium2>=4.30,<5",
     "pydantic>=2.11,<3",
     "pydantic-settings>=2.10,<3",
+    "rapidocr-onnxruntime>=1.4,<2",
 ]
 
 [project.scripts]
 intellipay = "intellipay.cli:main"
+intellipay-evaluate = "intellipay.evaluation:main"
 
 [dependency-groups]
 dev = ["pytest>=8.4,<9", "pytest-cov>=6.2,<8", "ruff>=0.12,<1"]
+
+[tool.uv]
+exclude-dependencies = [
+    { package = { name = "rapidocr-onnxruntime" }, dependencies = [
+        "opencv-python",
+    ] },
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/intellipay"]

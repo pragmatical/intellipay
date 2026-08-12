@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     xai_base_url: str = "https://api.x.ai/v1"
     xai_model: str = "grok-4.6"
     xai_timeout_seconds: float = 30.0
+    max_extraction_repair_attempts: int = Field(default=1, ge=0, le=3)
 
     @field_validator("xai_api_key", mode="before")
     @classmethod

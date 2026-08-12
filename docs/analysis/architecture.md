@@ -208,7 +208,7 @@ Maintain four version-controlled assets:
 3. `gold findings`: expected stable validation codes and severities.
 4. `gold outcome`: expected `APPROVE`, `REJECT`, or `ESCALATE`, with acceptable reason codes.
 
-The 16 supplied invoice identities form the seed corpus. Score each file independently from clean state for extraction coverage, then run declared same-identity sequences for duplicate, revision, conflict, and idempotency behavior. Treat the original and revised INV-1004 as linked test cases; treat equivalent INV-1011 and INV-1012 formats as variants; and treat the differing INV-1013 documents as a conflicting-version sequence. A finance/domain reviewer must approve gold outcomes because the README does not define every policy decision.
+The 16 supplied invoice identities form the seed corpus. Score each file independently from clean state for extraction coverage, then run declared same-identity sequences for duplicate, revision, conflict, and idempotency behavior. Treat the original and revised INV-1004 as linked test cases, and treat INV-1011, INV-1012, and INV-1013 cross-format files as equivalent variants. Deterministic extraction confirms that the INV-1013 JSON and PDF payment facts are equal despite decimal presentation differences. A finance/domain reviewer must approve gold outcomes because the README does not define every policy decision.
 
 ### Seed Scenario Matrix
 

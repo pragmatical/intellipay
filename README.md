@@ -4,7 +4,7 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** Stage 1 is implemented and verified: INV-1001 completes the LangGraph workflow with deterministic controls, durable checkpoints, one authorized idempotent mock payment, bounded extraction repair, and optional live Grok extraction. Multi-format corpus control and the review interface remain next.
+> **Current status:** Stages 1 through 3 are implemented and verified. The complete supplied corpus is controlled deterministically, while ambiguous extraction now has typed critique, one bounded repair, redacted attempt traces, safe outage and invalid-output escalation, prompt-injection protection, and offline local/mocked-live provider parity. Finance/domain label approval and the Stage 4 reviewer workflow remain next.
 
 ## Run the Reasoning Slice
 

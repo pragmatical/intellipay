@@ -3,6 +3,8 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
+from decimal import Decimal
+from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
@@ -38,6 +40,27 @@ MIGRATIONS = (
             invoice_number TEXT NOT NULL,
             amount TEXT NOT NULL,
             currency TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        """,
+    ),
+    (
+        2,
+        """
+        ALTER TABLE runs ADD COLUMN invoice_fingerprint TEXT;
+        CREATE INDEX IF NOT EXISTS idx_runs_invoice_number
+            ON runs(invoice_number);
+        """,
+    ),
+    (
+        3,
+        """
+        CREATE TABLE review_tasks (
+            review_task_id TEXT PRIMARY KEY,
+            run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id),
+            invoice_number TEXT NOT NULL,
+            reason_codes TEXT NOT NULL,
             status TEXT NOT NULL,
             created_at TEXT NOT NULL
         );
@@ -101,9 +124,26 @@ class SQLiteStore:
     ) -> None:
         with self._connect() as connection:
             connection.execute(
-                "UPDATE runs SET invoice_number = ?, outcome = ? WHERE run_id = ?",
-                (invoice.invoice_number, outcome, run_id),
+                """UPDATE runs
+                SET invoice_number = ?, invoice_fingerprint = ?, outcome = ?
+                WHERE run_id = ?""",
+                (invoice.invoice_number, self._invoice_fingerprint(invoice), outcome, run_id),
             )
+            if outcome is Outcome.ESCALATE:
+                connection.execute(
+                    """INSERT INTO review_tasks(
+                        review_task_id, run_id, invoice_number,
+                        reason_codes, status, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?)""",
+                    (
+                        f"review_{uuid4().hex}",
+                        run_id,
+                        invoice.invoice_number,
+                        json.dumps(sorted({finding.code for finding in findings})),
+                        "OPEN",
+                        self._now(),
+                    ),
+                )
         self.record_event(
             run_id,
             "workflow_completed",
@@ -149,6 +189,30 @@ class SQLiteStore:
             row = connection.execute("SELECT COUNT(*) AS count FROM payments").fetchone()
         return int(row["count"])
 
+    def review_task_count(self) -> int:
+        with self._connect() as connection:
+            row = connection.execute("SELECT COUNT(*) AS count FROM review_tasks").fetchone()
+        return int(row["count"])
+
+    def prior_invoice_relation(self, invoice: InvoiceCandidate, source_hash: str) -> str | None:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """SELECT source_hash, invoice_fingerprint
+                FROM runs
+                WHERE invoice_number = ? AND outcome IS NOT NULL
+                ORDER BY created_at""",
+                (invoice.invoice_number,),
+            ).fetchall()
+        different_sources = [row for row in rows if row["source_hash"] != source_hash]
+        if not different_sources:
+            return None
+        fingerprint = self._invoice_fingerprint(invoice)
+        return (
+            "DUPLICATE_INVOICE"
+            if any(row["invoice_fingerprint"] == fingerprint for row in different_sources)
+            else "INVOICE_VERSION_CONFLICT"
+        )
+
     def schema_version(self) -> int:
         with self._connect() as connection:
             row = connection.execute(
@@ -179,3 +243,27 @@ class SQLiteStore:
     @staticmethod
     def _now() -> str:
         return datetime.now(UTC).isoformat()
+
+    @staticmethod
+    def _invoice_fingerprint(invoice: InvoiceCandidate) -> str:
+        payment_facts = {
+            "currency": invoice.currency,
+            "invoice_number": invoice.invoice_number,
+            "line_items": sorted(
+                (
+                    line.item.casefold(),
+                    SQLiteStore._canonical_decimal(line.quantity),
+                    SQLiteStore._canonical_decimal(line.unit_price),
+                )
+                for line in invoice.line_items
+            ),
+            "shipping": SQLiteStore._canonical_decimal(invoice.shipping),
+            "subtotal": SQLiteStore._canonical_decimal(invoice.subtotal),
+            "tax": SQLiteStore._canonical_decimal(invoice.tax),
+            "total_amount": SQLiteStore._canonical_decimal(invoice.total_amount),
+        }
+        return sha256(json.dumps(payment_facts, sort_keys=True).encode()).hexdigest()
+
+    @staticmethod
+    def _canonical_decimal(value: Decimal) -> str:
+        return format(value.normalize(), "f")

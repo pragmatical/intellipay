@@ -15,7 +15,7 @@ def test_migrations_are_repeatable(tmp_path: Path) -> None:
     first_inventory = store.inventory()
     store.initialize()
 
-    assert store.schema_version() == 1
+    assert store.schema_version() == 3
     assert (
         store.inventory()
         == first_inventory
@@ -113,3 +113,25 @@ def test_ambiguous_subtotal_completes_one_bounded_repair(tmp_path: Path) -> None
     ]
     assert result.invoice.subtotal == 5000
     assert result.payment_status is PaymentStatus.SUCCESS
+
+
+def test_json_invoice_uses_deterministic_parser(tmp_path: Path) -> None:
+    database = tmp_path / "intellipay.db"
+    settings = Settings(database_path=database, _env_file=None)
+
+    result = InvoiceWorkflow(settings).process(Path("data/invoices/invoice_1004.json"))
+
+    assert result.invoice.invoice_number == "INV-1004"
+    assert result.invoice.total_amount == 1890
+    assert result.event_types[0] == "invoice_extracted"
+
+
+def test_malformed_json_preserves_missing_values_for_findings(tmp_path: Path) -> None:
+    database = tmp_path / "intellipay.db"
+    settings = Settings(database_path=database, _env_file=None)
+
+    result = InvoiceWorkflow(settings).process(Path("data/invoices/invoice_1009.json"))
+
+    assert result.outcome is Outcome.REJECT
+    assert "MISSING_REQUIRED_FIELD" in {finding.code for finding in result.findings}
+    assert result.payment_status is PaymentStatus.NOT_ATTEMPTED

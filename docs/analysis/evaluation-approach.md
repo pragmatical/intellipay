@@ -59,7 +59,7 @@ The manifest must classify same-identity files explicitly:
 
 - INV-1011 TXT and PDF are equivalent format variants.
 - INV-1012 TXT and PDF are equivalent format variants.
-- INV-1013 JSON and PDF share an invoice identity but contain conflicting facts; isolated runs score each parser, while the ordered sequence must escalate the second document as a conflicting version and must not create a second payment.
+- INV-1013 JSON and PDF share an invoice identity and normalize to equivalent payment facts; isolated runs score each parser, while the ordered sequence must classify the second document as a duplicate and must not create a payment. A separate genuinely conflicting fixture is required for conflict-sequence scoring.
 - INV-1004 and INV-1004 R1 are an explicit revision sequence requiring a supersession decision.
 
 | Scenario | Seed cases | Primary assertion |

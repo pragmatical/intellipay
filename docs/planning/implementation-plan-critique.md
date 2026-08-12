@@ -41,7 +41,7 @@ The findings below concentrate on two areas: requirement risk against the case b
 | 2 | Added one controlled structured extraction and critic-repair cycle to Stage 1; Stage 3 retains full ambiguous-corpus, adversarial, failure, and optional live-provider hardening. |
 | 3 | Retained `APPROVE`, `REJECT`, and `ESCALATE` as the only workflow outcomes; `HOLD` is an escalation reason and `REQUEST_CORRECTION` is a follow-up action. Updated [ADR-0006](../adr/0006-use-three-terminal-decision-outcomes.md). |
 | 4 | Defined inventory demand as aggregate quantity by normalized item identity and made INV-1013 the discriminating case in the solution, evaluation approach, and plan. |
-| 5 | Split evaluation into isolated fixture runs and ordered operational sequences. Equivalent variants score extraction independently; conflicting same-identity documents exercise escalation and payment idempotency. |
+| 5 | Split evaluation into isolated fixture runs and ordered operational sequences. Equivalent variants score extraction independently; the implementation later verified that INV-1013 is equivalent rather than conflicting, so a separate conflict fixture remains necessary. |
 | 6 | Added INV-1007's $110 arithmetic discrepancy and non-ISO date normalization to the solution, evaluation approach, and Stage 2 verification. |
 | 7 | Added a configurable near-threshold combined risk signal. It requires another risk factor such as unknown vendor or item and is not an automatic fraud verdict. |
 | 8 | Added explicit findings for unparseable or relative dates and due dates inconsistent with stated payment terms. |
@@ -106,9 +106,9 @@ Record the mode in run output and traces, select it through a single documented 
 |---|---|---|
 | INV-1011 | `invoice_1011.txt`, `invoice_1011.pdf` | Same invoice, two formats |
 | INV-1012 | `invoice_1012.txt`, `invoice_1012.pdf` | Same invoice, two formats |
-| INV-1013 | `invoice_1013.json`, `invoice_1013.pdf` | Same invoice number, **different line items and totals** |
+| INV-1013 | `invoice_1013.json`, `invoice_1013.pdf` | Same invoice and payment facts; decimal presentation differs |
 
-**Risk.** A full-corpus run will raise duplicate findings for the same invoice number, and INV-1013 presents two conflicting documents for one identity. Both effects will distort route agreement and duplicate-payment metrics.
+**Risk.** A full-corpus run will raise duplicate findings for repeated invoice identities if format scoring and operational sequences share state. Initial visual inspection classified INV-1013 as conflicting; Stage 2 deterministic extraction disproved that observation and showed equivalent payment facts. Treating decimal presentation as a conflict would distort route agreement and duplicate-payment metrics.
 
 **Recommendation.** Decide and document whether each pair is processed as a duplicate submission, an independent format variant in a separate run scope, or a conflicting-version case requiring supersession. Reflect the decision in the evaluation manifest so the corpus run is interpretable.
 

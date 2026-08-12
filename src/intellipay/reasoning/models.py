@@ -23,16 +23,17 @@ class LineItem(BaseModel):
 class InvoiceCandidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    vendor_name: str = Field(min_length=1)
-    invoice_number: str = Field(min_length=1)
-    invoice_date: str = Field(min_length=1)
-    due_date: str = Field(min_length=1)
+    vendor_name: str
+    invoice_number: str
+    invoice_date: str
+    due_date: str | None
     currency: Currency
     subtotal: Decimal
     tax: Decimal
+    shipping: Decimal = Decimal()
     total_amount: Decimal
-    payment_terms: str = Field(min_length=1)
-    line_items: list[LineItem] = Field(min_length=1)
+    payment_terms: str
+    line_items: list[LineItem]
 
 
 class ExtractionRequest(BaseModel):

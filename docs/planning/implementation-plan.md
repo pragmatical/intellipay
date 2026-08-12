@@ -187,7 +187,16 @@ Accounts payable can submit every supplied invoice format and receive an explici
 
 ### Outcome Gate
 
-All supplied invoices reach their approved gold route or a documented draft-label discrepancy. Hard-control recall is 100% on approved seed labels, payment invariants pass, and per-case failures are reported without stopping the batch.
+- [x] All 20 supplied files reach a terminal outcome through deterministic adapters.
+- [x] Route and finding agreement are 100% against the versioned draft seed labels.
+- [x] Hard-control recall is 100% across the four isolated rejection cases.
+- [x] Rejected and escalated cases produce zero payments.
+- [x] INV-1004 revision and equivalent-format sequences cannot produce a second payment.
+- [x] Per-case failures are captured without aborting the batch; the measured run has zero errors.
+- [x] Escalated cases create durable review tasks.
+- [ ] Finance/domain reviewer approves the 20 draft seed labels.
+
+**Gate status:** Implementation passed on 2026-08-12; domain-label approval remains pending. See the [Stage 2 verification record](stage-2-verification.md) and [machine-readable corpus report](../../evaluation/stage2-report.json).
 
 ## Stage 3: Resolve Ambiguous Invoices Without Weakening Controls
 
@@ -256,7 +265,16 @@ Accounts payable can submit an ambiguous or OCR-damaged invoice and see IntelliP
 
 ### Outcome Gate
 
-The self-correction and unavailable-model paths are executable and traced, no adversarial fixture alters a protected boundary, offline CI remains deterministic, and live-model use is optional.
+- [x] Successful self-correction emits typed defects, repairs once, and passes deterministic revalidation.
+- [x] Unresolved repair exhausts the configured limit and escalates without payment.
+- [x] Provider timeout and malformed structured output follow explicit fallback and escalation paths.
+- [x] Embedded hostile instructions cannot change policy, graph routing, tools, or payment authority.
+- [x] Enhanced-review critique cannot weaken a deterministic outcome, including when critique fails.
+- [x] Local and mocked-live adapters pass the same bounded repair graph offline.
+- [x] Reasoning operations emit redacted, typed attempt traces.
+- [x] The default automated suite remains deterministic and network-free.
+
+**Gate status:** Passed on 2026-08-12. See the [Stage 3 verification record](stage-3-verification.md) for commands and measured evidence. The paid real-Grok smoke test remains opt-in and was not rerun for this gate.
 
 ## Stage 4: Enable Reviewers to Resolve Exceptions
 

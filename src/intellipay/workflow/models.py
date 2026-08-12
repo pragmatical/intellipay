@@ -24,6 +24,21 @@ class Finding(BaseModel):
     message: str = Field(min_length=1)
 
 
+class ReasoningTraceEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    operation: str
+    attempt: int = Field(ge=0)
+    status: str
+    provider: str
+    model: str | None = None
+    prompt_version: str
+    latency_ms: int = Field(ge=0)
+    request_fingerprint: str
+    token_usage: int | None = Field(default=None, ge=0)
+    error_type: str | None = None
+
+
 class WorkflowResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -35,6 +50,7 @@ class WorkflowResult(BaseModel):
     findings: list[Finding]
     extraction_defects: list[ExtractionDefect] = Field(default_factory=list)
     repair_attempts: int = 0
+    reasoning_trace: list[ReasoningTraceEntry] = Field(default_factory=list)
     inventory_snapshot: dict[str, str]
     policy_rules_fired: list[str]
     event_types: list[str]
