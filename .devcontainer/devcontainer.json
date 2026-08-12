@@ -1,0 +1,66 @@
+{
+	"name": "Invoice Multi-Agent Development",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": true,
+			"configureZshAsDefaultShell": true
+		},
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "lts"
+		},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"version": "latest",
+			"dockerDashComposeVersion": "v2"
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+	"containerEnv": {
+		"PYTHONUNBUFFERED": "1",
+		"PYTHONDONTWRITEBYTECODE": "1",
+		"PIP_DISABLE_PIP_VERSION_CHECK": "1",
+		"UV_LINK_MODE": "copy"
+	},
+	"mounts": [
+		"source=intellipay-zsh-history,target=/commandhistory,type=volume"
+	],
+	"forwardPorts": [
+		8000,
+		8501,
+		11434
+	],
+	"portsAttributes": {
+		"8000": {
+			"label": "Python API"
+		},
+		"8501": {
+			"label": "Streamlit"
+		},
+		"11434": {
+			"label": "Local model server"
+		}
+	},
+	"postCreateCommand": "sudo chown vscode:vscode /commandhistory && touch /commandhistory/.zsh_history && python -m pip install --user --upgrade uv",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				"ms-toolsai.jupyter",
+				"charliermarsh.ruff",
+				"tamasfe.even-better-toml"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.testing.pytestEnabled": true,
+				"python.testing.unittestEnabled": false,
+				"editor.formatOnSave": true,
+				"terminal.integrated.defaultProfile.linux": "zsh"
+			}
+		}
+	},
+	"remoteUser": "vscode"
+}
