@@ -45,6 +45,39 @@ uv run intellipay-review --host 0.0.0.0 --port 8000
 
 Open `http://localhost:8000/reviews` and authenticate with those credentials. The interface shows the durable queue, original source, normalized payment facts, findings, rules, event timeline, constrained actions, and completed decision history. HTTP Basic authentication is a prototype boundary; production identity and delegated authority integration remain deferred.
 
+## Run the Executable Presentation
+
+Run the complete narrated workflow and approval experience with one command:
+
+```bash
+uv run intellipay-demo
+```
+
+The runner uses deterministic local reasoning, resets an isolated demo database, demonstrates routine payment, replay safety, bounded repair, approvable and blocked reviews, hard rejection, and revision safety, then starts the review UI at `http://127.0.0.1:8001/reviews`. Use username `reviewer` and password `intellipay-demo`.
+
+Follow the [executable presentation and approval walkthrough](docs/demo.md) for the narrative, UI actions, optional flags, and local observability view.
+
+## View Observability Locally
+
+Start the local OpenTelemetry Collector, Jaeger, Prometheus, and Grafana stack, then opt the application into OTLP export:
+
+```bash
+docker compose -f compose.observability.yaml up -d
+export INTELLIPAY_TELEMETRY_ENABLED=true
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+uv run intellipay data/invoices/invoice_1001.txt
+```
+
+Open Jaeger at `http://localhost:16686` to inspect the workflow, graph-node, and reasoning spans. Open Grafana at `http://localhost:3000`, choose **Explore**, and query the provisioned IntelliPay Metrics data source. The stack binds only to localhost and requires no LangSmith account. Telemetry is disabled by default and is operational evidence, not the authoritative financial audit record.
+
+Export the durable, versioned event stream for a warehouse or local analysis tool using its monotonic cursor:
+
+```bash
+uv run intellipay-export-events --after-sequence 0 --output .intellipay/events.jsonl
+```
+
+Reviewer identities, rationales, and payment IDs are redacted in this export. LangSmith can remain an optional hosted trace destination later without changing application instrumentation.
+
 ## Solution Overview
 
 IntelliPay combines three kinds of reasoning:

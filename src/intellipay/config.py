@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     max_extraction_repair_attempts: int = Field(default=1, ge=0, le=3)
     reviewer_username: str = "reviewer"
     reviewer_password: SecretStr | None = None
+    telemetry_enabled: bool = False
+    telemetry_service_name: str = "intellipay"
+    telemetry_environment: str = "local"
+    telemetry_sample_ratio: float = Field(default=1.0, ge=0.0, le=1.0)
 
     @field_validator("xai_api_key", mode="before")
     @classmethod

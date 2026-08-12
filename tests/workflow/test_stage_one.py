@@ -15,7 +15,7 @@ def test_migrations_are_repeatable(tmp_path: Path) -> None:
     first_inventory = store.inventory()
     store.initialize()
 
-    assert store.schema_version() == 4
+    assert store.schema_version() == 5
     assert (
         store.inventory()
         == first_inventory

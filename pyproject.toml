@@ -21,11 +21,16 @@ dependencies = [
     "python-multipart>=0.0.20,<1",
     "rapidocr-onnxruntime>=1.4,<2",
     "uvicorn>=0.35,<1",
+    "opentelemetry-api>=1.36,<2",
+    "opentelemetry-sdk>=1.36,<2",
+    "opentelemetry-exporter-otlp-proto-http>=1.36,<2",
 ]
 
 [project.scripts]
 intellipay = "intellipay.cli:main"
+intellipay-demo = "intellipay.demo:main"
 intellipay-evaluate = "intellipay.evaluation:main"
+intellipay-export-events = "intellipay.event_export:main"
 intellipay-review = "intellipay.review_app:main"
 
 [dependency-groups]

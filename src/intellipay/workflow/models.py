@@ -66,9 +66,14 @@ class ReviewTask(BaseModel):
 class ReviewEvent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    sequence: int = Field(ge=1)
+    event_id: str
+    schema_version: int = Field(ge=1)
     event_type: str
     payload: dict[str, object]
     created_at: str
+    trace_id: str | None = None
+    span_id: str | None = None
 
 
 class ReviewCase(BaseModel):

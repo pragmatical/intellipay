@@ -8,6 +8,8 @@ from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
+from opentelemetry import trace
+
 from intellipay.reasoning.models import InvoiceCandidate
 from intellipay.workflow.models import (
     Finding,
@@ -87,6 +89,17 @@ MIGRATIONS = (
             ON review_tasks(status, created_at);
         """,
     ),
+    (
+        5,
+        """
+        ALTER TABLE events ADD COLUMN event_uuid TEXT;
+        ALTER TABLE events ADD COLUMN schema_version INTEGER NOT NULL DEFAULT 1;
+        ALTER TABLE events ADD COLUMN trace_id TEXT;
+        ALTER TABLE events ADD COLUMN span_id TEXT;
+        UPDATE events SET event_uuid = 'evt_legacy_' || event_id WHERE event_uuid IS NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_events_event_uuid ON events(event_uuid);
+        """,
+    ),
 )
 
 REVIEW_APPROVAL_BLOCKERS = {
@@ -144,11 +157,22 @@ class SQLiteStore:
             )
 
     def record_event(self, run_id: str, event_type: str, payload: dict[str, object]) -> None:
+        trace_id, span_id = self._trace_context()
         with self._connect() as connection:
             connection.execute(
-                """INSERT INTO events(run_id, event_type, payload, created_at)
-                VALUES (?, ?, ?, ?)""",
-                (run_id, event_type, json.dumps(payload, sort_keys=True), self._now()),
+                """INSERT INTO events(
+                    run_id, event_type, payload, created_at,
+                    event_uuid, schema_version, trace_id, span_id
+                ) VALUES (?, ?, ?, ?, ?, 1, ?, ?)""",
+                (
+                    run_id,
+                    event_type,
+                    json.dumps(payload, sort_keys=True),
+                    self._now(),
+                    f"evt_{uuid4().hex}",
+                    trace_id,
+                    span_id,
+                ),
             )
 
     def complete_run(
@@ -278,6 +302,7 @@ class SQLiteStore:
             raise ValueError(f"Review task {review_task_id} is already completed")
 
         now = self._now()
+        trace_id, span_id = self._trace_context()
         with self._connect() as connection:
             cursor = connection.execute(
                 """UPDATE review_tasks
@@ -289,8 +314,10 @@ class SQLiteStore:
             if cursor.rowcount != 1:
                 raise ValueError(f"Review task {review_task_id} is no longer open")
             connection.execute(
-                """INSERT INTO events(run_id, event_type, payload, created_at)
-                VALUES (?, 'review_decided', ?, ?)""",
+                """INSERT INTO events(
+                    run_id, event_type, payload, created_at,
+                    event_uuid, schema_version, trace_id, span_id
+                ) VALUES (?, 'review_decided', ?, ?, ?, 1, ?, ?)""",
                 (
                     task.run_id,
                     json.dumps(
@@ -298,6 +325,9 @@ class SQLiteStore:
                         sort_keys=True,
                     ),
                     now,
+                    f"evt_{uuid4().hex}",
+                    trace_id,
+                    span_id,
                 ),
             )
         return self.get_review_task(review_task_id)
@@ -339,15 +369,35 @@ class SQLiteStore:
     def events(self, run_id: str) -> list[ReviewEvent]:
         with self._connect() as connection:
             rows = connection.execute(
-                """SELECT event_type, payload, created_at
+                """SELECT event_id, event_uuid, schema_version, event_type,
+                    payload, created_at, trace_id, span_id
                 FROM events WHERE run_id = ? ORDER BY event_id""",
                 (run_id,),
             ).fetchall()
+        return self._events(rows)
+
+    def events_after(self, sequence: int = 0) -> list[ReviewEvent]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """SELECT event_id, event_uuid, schema_version, event_type,
+                    payload, created_at, trace_id, span_id
+                FROM events WHERE event_id > ? ORDER BY event_id""",
+                (sequence,),
+            ).fetchall()
+        return self._events(rows)
+
+    @staticmethod
+    def _events(rows: list[sqlite3.Row]) -> list[ReviewEvent]:
         return [
             ReviewEvent(
+                sequence=row["event_id"],
+                event_id=row["event_uuid"],
+                schema_version=row["schema_version"],
                 event_type=row["event_type"],
                 payload=json.loads(row["payload"]),
                 created_at=row["created_at"],
+                trace_id=row["trace_id"],
+                span_id=row["span_id"],
             )
             for row in rows
         ]
@@ -385,6 +435,13 @@ class SQLiteStore:
                 yield connection
         finally:
             connection.close()
+
+    @staticmethod
+    def _trace_context() -> tuple[str | None, str | None]:
+        context = trace.get_current_span().get_span_context()
+        if not context.is_valid:
+            return None, None
+        return f"{context.trace_id:032x}", f"{context.span_id:016x}"
 
     @staticmethod
     def _now() -> str:

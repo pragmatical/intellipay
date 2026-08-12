@@ -13,13 +13,83 @@ The separation is intentional:
 
 The grading criteria originate in [the supplied exercise context](../context/README.md#evaluation-criteria). This assessment should be updated as implementation evidence changes and may be excluded from product-facing documentation or deliverables if required.
 
+## Evaluation Criteria
+
+- **Functionality** — Does the system work end-to-end?
+- **Code Quality** — Clean, testable, well-structured code with error handling and observability
+- **Agentic Sophistication** — LLM integration, multi-agent flow, tool use, self-correction loops
+- **Shipping Mindset** — Valuable MVP delivered under ambiguity; scope ruthlessly cut where needed
+- **Presentation** — Clear translation of technical decisions to business impact
+- **Above/Beyond** - Have you made it your own? Implemented additional features that make the solution feel great? Expanded assumptions? Added to test cases?
+- **UI/UX** - Users will understand and enjoy using this system.
+
+### Feature Rubric
+
+The following feature lists are the complete repository interpretation of the seven criteria. An item not listed here may provide supporting evidence or guide future work, but it must not be treated as an additional criterion or lower a readiness status.
+
+#### Functionality
+
+- Invoice ingestion and extraction
+- Inventory and policy validation
+- Approve, reject, and escalate routes
+- Human review and resume
+- Authorized idempotent mock payment
+
+#### Code Quality
+
+- Typed modular boundaries
+- Automated tests
+- Safe error handling
+- Structured observability
+- Durable persistence and migrations
+
+#### Agentic Sophistication
+
+- LLM provider integration
+- LangGraph multi-step orchestration
+- Bounded tools and structured output
+- Critique and repair loop
+- Policy-safe model boundaries
+
+#### Shipping Mindset
+
+- Runnable local MVP
+- Complete core value path
+- Explicit scope cuts
+- Pragmatic prototype choices
+- Documented assumptions and limits
+
+#### Presentation
+
+- Business problem narrative
+- Decision-to-impact explanations
+- End-to-end demo narrative
+- Measured outcome summary
+- Clear architecture visuals
+
+#### Above/Beyond
+
+- Revision and cross-format identity
+- Prompt-injection resistance
+- Local observability stack
+- Redacted analytics event export
+- Expanded adversarial test cases
+
+#### UI/UX
+
+- Scannable exception queue
+- Evidence-rich review detail
+- Clear constrained actions
+- Responsive desktop and mobile layout
+- Accessible, understandable states
+
 Assessment date: 2026-08-12
 
 ## Executive Assessment
 
-IntelliPay now has a runnable application, typed LangGraph workflow, deterministic multi-format corpus processing, bounded model reasoning, durable human review, and idempotent mock payment. The complete offline suite passes 52 tests, and the 20-case corpus report shows full route and finding agreement, full hard-control recall, and zero prohibited payments. Functionality, Code Quality, Agentic Sophistication, Shipping Mindset, Above/Beyond, and UI/UX have repeatable evidence.
+IntelliPay demonstrates every approved feature across all seven criteria. The complete offline suite passes 57 tests, and a fresh 20-case corpus run shows full route and finding agreement, full hard-control recall, zero prohibited payments, and zero batch errors.
 
-The main submission gap is now presentation and release evidence rather than core implementation. The repository lacks a concise golden-demo script or recording, a screenshot set, a clean-environment acceptance transcript, consolidated performance/cost results, and a single limitations/security review. Finance label approval and observed AP usability measures also remain external; completed tabletop simulations must not be presented as participant evidence.
+Presentation is Demonstrated by the `intellipay-demo` runner and its walkthrough: one command narrates business impact while executing routine payment, replay protection, bounded correction, approvable and blocked human review, hard rejection, and revision safety, then serves the approval UI against the same state. Release tags, recordings, screenshot packs, clean-environment transcripts, external approvals, participant studies, and dedicated performance or security reports may strengthen evidence, but they are not rubric requirements.
 
 ## Scorecards
 
@@ -29,52 +99,44 @@ Status meanings:
 - **Designed:** The repository explains the behavior but cannot prove it yet.
 - **Missing:** Neither sufficient design nor executable proof exists.
 
-### Original Readiness Baseline
-
-This table preserves the initial repository assessment for reference. It describes the evidence available before implementation began and is not the current project status.
-
-| Criterion | Status | Existing strength | Primary gap | Proof required |
-|---|---|---|---|---|
-| Functionality | Designed | Complete workflow, scenario matrix, terminal outcomes, and payment invariants | No runnable CLI, graph, database, or adapters | Run every supplied invoice end to end and show the expected terminal or review state |
-| Code Quality | Designed | Typed boundaries, retry policy, trust boundaries, and test strategy | No application code, dependency manifest, tests, or instrumentation | Passing unit, contract, graph-route, and end-to-end tests plus structured logs |
-| Agentic Sophistication | Designed | LangGraph flow, narrow tools, Grok provider, extraction critic, and bounded correction loop | No working model adapter, critic loop, tool calls, or trace | Demonstrate structured model output, critic defects, retry, fallback, and policy-safe routing |
-| Shipping Mindset | Designed | Local-first scope, SQLite, mock payment, offline path, and explicit production deferrals | Some design exceeds what is needed for the first vertical slice | Deliver the cut line below before generalized lineage or production integrations |
-| Presentation | Designed | Business baseline, target outcomes, risk mapping, diagrams, and ADR rationale | No live narrative backed by measured output | Present baseline, decision rationale, live cases, metrics, and business impact in one coherent demo |
-| Above/Beyond | Designed | Revision handling, replay safety, policy versioning, adversarial cases, and payment idempotency | Differentiators are not implemented or visible | Make at least revision safety, prompt-injection resistance, and replay idempotency executable |
-| UI/UX | Designed | A structured result contract and reviewer information needs are described | No review screen, status history, or human decision action | Provide a lightweight review console with evidence, findings, reasons, and explicit actions |
+Statuses are determined only from the approved Feature Rubric. Optional evidence and backlog items do not create additional readiness gates.
 
 ### Current Progress
 
 This table assesses the executable evidence currently present in the repository.
 
-| Criterion | Status | Existing strength | Primary gap | Proof required |
-|---|---|---|---|---|
-| Functionality | Demonstrated | CLI and LangGraph execute approve, reject, escalate, review, and payment routes across all 20 cases | Clean-environment acceptance transcript is not captured | Reproduce setup, corpus evaluation, and representative workflows from a clean checkout |
-| Code Quality | Demonstrated | Typed boundaries, dependency injection, durable storage, structured events, and 52 passing tests | No consolidated security review or SQLite lock/process-restart fault evidence | Capture lint/type/test evidence and close or register remaining resilience gaps |
-| Agentic Sophistication | Demonstrated | Local and Grok-compatible providers, structured output, critic defects, bounded repair, fallback, prompt-injection isolation, and typed traces | Credentialed live-model behavior remains optional and environment-dependent | Preserve offline evidence; add a redacted live smoke trace only when credentials are approved |
-| Shipping Mindset | Demonstrated | Local-first implementation ships the complete core workflow while explicitly deferring production infrastructure | No immutable prototype release identifier | Complete acceptance evidence and tag the demonstrated prototype |
-| Presentation | Designed | Business baseline, architecture, ADRs, measured corpus results, and live review UI are available | No concise demo script/recording, screenshots, or consolidated result narrative | Package and rehearse the ten-minute golden demo with reproducible evidence |
-| Above/Beyond | Demonstrated | Revision safety, equivalent-format identity, prompt-injection resistance, strict checkpoint serialization, and replay idempotency are executable | Differentiators are distributed across tests and verification records | Surface the strongest three in the golden demo |
-| UI/UX | Demonstrated | Authenticated queue and detail views expose source, normalized facts, findings, rules, history, rationale, and constrained actions on desktop/mobile | Real AP handling-time, confidence, and comprehension evidence is absent | Run representative AP sessions or explicitly retain this as an external limitation |
+| Criterion | Status | Approved features evidenced | Remaining rubric gap |
+|---|---|---|---|
+| Functionality | Demonstrated | All five execute across CLI, LangGraph, review, and payment flows | None |
+| Code Quality | Demonstrated | All five are supported by typed boundaries, 57 tests, safe fallback, OTel, and migrated SQLite storage | None |
+| Agentic Sophistication | Demonstrated | All five execute through provider-backed, structured, bounded, policy-safe graph operations | None |
+| Shipping Mindset | Demonstrated | All five are visible in the local-first MVP, pragmatic stack, explicit deferrals, and documented limitations | None |
+| Presentation | Demonstrated | All five are executable through the narrated runner, measured results, architecture references, and approval walkthrough | None |
+| Above/Beyond | Demonstrated | All five differentiators are executable and tested | None |
+| UI/UX | Demonstrated | All five are present in the live responsive review workflow | None |
 
-## Highest-Leverage Next Actions
+## Presentation Rehearsal
 
-1. **Produce the acceptance and resilience evidence pack.** Run setup from a clean checkout; capture tests, lint, formatting, corpus metrics, required-field accuracy, representative traces, model/payment outage behavior, SQLite lock or restart behavior, latency, and model-use/cost summaries. Record unresolved items in one limitations and security review.
-2. **Package the golden demo.** Create a ten-minute script covering the business baseline, INV-1001 approval and replay, a bounded repair, INV-1002 review, a hard rejection, revision safety, and measured corpus results. Capture desktop/mobile screenshots and a completed-review state, then rehearse from the documented setup.
-3. **Complete external evidence where participants are available.** Obtain authorized finance/domain approval for the 20 `simulated-reviewed` labels and run AP sessions for handling time, confidence, help requests, and comprehension. These improve trust and UI evidence but should remain clearly pending if submission timing does not permit them.
+Run `uv run intellipay-demo` and follow [the executable presentation walkthrough](../docs/demo.md). Rehearse the terminal narrative, approve INV-9001, show the disabled approval for INV-1002, and inspect the INV-1004 revision conflict without changing the scripted sequence.
 
 ## Current Executable Evidence
 
-- `uv run pytest -q` passes 52 tests.
-- `uv run intellipay-evaluate --output evaluation/stage2-report.json` evaluates 20/20 cases with zero errors and zero prohibited payments.
+- `uv run pytest -q` passes 57 tests; `uv run ruff check .`, `uv run ruff format --check src tests`, and `git diff --check` pass.
+- `uv run intellipay-evaluate --output evaluation/stage2-report.json` evaluates 20/20 cases with 100% route/finding agreement, 100% hard-control recall, zero prohibited payments, and zero batch errors.
 - `uv run intellipay <invoice-path>` demonstrates routine, rejected, and escalated CLI outcomes.
 - `uv run intellipay-review --host 0.0.0.0 --port 8000` serves the authenticated review workflow.
+- Desktop and mobile browser checks at 1440×900 and 390×844 verify the INV-1002 evidence, findings, timeline, constrained actions, disabled approval explanation, and absence of horizontal overflow.
+- `docker compose -f compose.observability.yaml up -d` runs the Collector, Jaeger, Prometheus, and Grafana; telemetry tests prove root/node/reasoning correlation, redaction, and exporter-failure isolation.
+- `uv run intellipay-export-events --after-sequence 0` emits a versioned, cursor-ordered, redacted JSONL analytics stream.
+- `uv run intellipay-demo` executes the narrated pipeline, seeds the review queue, and serves the UI; a browser approval of INV-9001 resumed payment successfully while INV-1002 retained its disabled approval control.
 - `docs/planning/stage-2-verification.md`, `stage-3-verification.md`, and `stage-4-verification.md` record repeatable focused checks.
 - `docs/runbooks/finance-domain-label-approval-simulation.md` and `accounts-payable-usability-simulation.md` record completed simulations and their limitations.
 
 Documentation is not executable proof. Update a status to **Demonstrated** only when a repeatable command, test, screenshot, trace, or recorded metric supports it.
 
-## MVP Cut Line
+## Implementation Scope Evidence
+
+This section records how Shipping Mindset was implemented. It is not a second rubric, and its individual items are not additional evaluation criteria.
 
 ### Must Ship
 
@@ -100,7 +162,7 @@ Documentation is not executable proof. Update a status to **Demonstrated** only 
 | Audit | Structured append-only events sufficient for the demo and evaluation report |
 | Reference data | Required inventory table and snapshot hash only |
 | Human review | Durable review state plus one reviewer flow; no enterprise identity integration |
-| Observability | Structured logs and a generated run summary; no monitoring platform |
+| Observability | OTel workflow/node/reasoning spans and bounded metrics through a local Collector, Jaeger, Prometheus, and Grafana profile |
 | UI | One functional review console optimized for the golden demo; no design system or broad administration surface |
 
 ### Defer
@@ -110,9 +172,11 @@ Documentation is not executable proof. Update a status to **Demonstrated** only 
 - Generalized lineage graphs, retention automation, tamper-evident event chains, and production archive design
 - Multi-tenant authorization, enterprise SSO, queues, distributed workers, and managed infrastructure
 - Model training, fine-tuning, or automatic learning from reviewer corrections
-- Broad analytics dashboards beyond the evaluation report
+- Custom analytics dashboards beyond the provisioned local trace and metric data sources
 
-## Golden Demo
+## Presentation Feature Plan
+
+This is one candidate way to demonstrate the approved end-to-end demo narrative feature. Its individual cases and artifacts are not separate rubric requirements.
 
 The presentation should tell one end-to-end story in ten minutes or less.
 
@@ -126,70 +190,19 @@ The presentation should tell one end-to-end story in ten minutes or less.
 
 Keep INV-1004/R1 as the Above/Beyond proof for revision lineage and INV-1009 as the simplest hard-failure proof. Preserve INV-1014 as evidence that unsupported business policy escalates instead of being invented.
 
-## Criterion-Specific Guidance
+## Optional Supporting Evidence
 
-### Functionality
-
-Optimize for a complete path before parser breadth. The first milestone is INV-1001 from file to mock payment with persisted events. The second is one reject and one escalation. Only then expand to the full corpus.
-
-### Code Quality
-
-Use typed domain models, pure deterministic rules, ports for external dependencies, stable finding codes, and dependency injection for the reasoning and payment adapters. Every graph route and side effect needs a focused test. Log structured facts rather than prose-only messages.
-
-### Agentic Sophistication
-
-Do not maximize the number of agents. Make the existing responsibilities observable and defensible:
-
-- Extraction agent calls only parser and reasoning tools.
-- Critic emits typed defects and can request only a bounded repair.
-- Validation tools provide facts and never delegate hard controls to the model.
-- Approval combines deterministic policy with one bounded critique for enhanced-review cases.
-- Model output can make a route stricter but cannot authorize payment or weaken a hard finding.
-
-The trace should visibly show tool input, structured output, defect, retry count, and final route without exposing secrets or unnecessary invoice data.
-
-### Shipping Mindset
-
-Treat the production direction as evidence of judgment, not current scope. Do not implement managed queues, full archival governance, or enterprise integrations until the golden demo and full-corpus tests pass.
-
-### Presentation
-
-Frame each technical choice as a business control:
-
-- Deterministic rules reduce false approvals and make outcomes reproducible.
-- Grok reduces manual effort on ambiguous documents without receiving payment authority.
-- Escalation converts uncertainty into a manageable queue instead of hidden risk.
-- Idempotency prevents duplicate cash movement.
-- Evidence and rules fired reduce review time and improve auditability.
-
-### Above/Beyond
-
-Favor features that are easy to demonstrate and reinforce the core story. Revision-safe payment, adversarial prompt-injection tests, deterministic offline operation, and replayable traces are higher value than adding unrelated integrations.
-
-### UI/UX
-
-The review console should answer four questions without requiring log inspection:
-
-1. What did the system extract?
-2. What evidence and confidence support it?
-3. Which checks and policy rules determined this route?
-4. What action is available to me now?
-
-Use clear status labels, field-level differences, finding severity, source excerpts, and a chronological trace. Disable actions that policy does not permit and explain why in plain language.
-
-## Evidence Checklist
-
-Before submission, capture or generate:
+These artifacts can make the assessment easier to verify or the presentation easier to deliver. They are not criteria, and their absence must not lower a status when the approved features are already demonstrated.
 
 - A clean-clone setup and run command
-- Test output for the complete suite and the 16-invoice matrix
+- Test output for the complete suite and the 20-case corpus
 - A machine-readable evaluation report
 - One successful, one rejected, one escalated, and one replay-protected trace
 - One self-correction trace with typed critic defects
 - One offline model-unavailable trace
 - One prompt-injection test proving route and tool isolation
 - Screenshots of the review list, invoice detail, evidence/findings, and completed review action
-- A concise architecture diagram and the seven ADR links
+- A concise architecture diagram and the nine ADR links
 - A limitations section that names deferred integrations and unresolved business policy
 
 ## Reassessment Rule

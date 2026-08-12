@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.errors import GraphInterrupt
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
@@ -24,6 +25,7 @@ from intellipay.reasoning.models import (
     ExtractionRequest,
     InvoiceCandidate,
 )
+from intellipay.telemetry import Telemetry, create_telemetry
 from intellipay.workflow.models import (
     Finding,
     Outcome,
@@ -66,11 +68,13 @@ class InvoiceWorkflow:
         provider: ReasoningProvider | None = None,
         store: SQLiteStore | None = None,
         parsers: ParserRegistry | None = None,
+        telemetry: Telemetry | None = None,
     ) -> None:
         self._settings = settings
         self._provider = provider or create_reasoning_provider(settings)
         self._store = store or SQLiteStore(settings.database_path)
         self._parsers = parsers or ParserRegistry()
+        self._telemetry = telemetry or create_telemetry(settings)
         self._store.initialize()
         self._checkpoint_connection = sqlite3.connect(
             settings.database_path, check_same_thread=False
@@ -78,36 +82,55 @@ class InvoiceWorkflow:
         self._graph = self._build_graph()
 
     def process(self, path: Path) -> WorkflowResult:
+        started = perf_counter()
         source = path.read_bytes()
         content = source.decode("utf-8", errors="replace")
         source_hash = sha256(source).hexdigest()
         run_id = f"run_{uuid4().hex}"
-        self._store.create_run(run_id, source_hash, self._settings.reasoning_mode)
-        inventory_snapshot = self._store.inventory()
-        final = self._graph.invoke(
+        with self._telemetry.span(
+            "intellipay.invoice.process",
             {
-                "run_id": run_id,
-                "source_hash": source_hash,
-                "document_id": path.name,
-                "content": content,
-                "source_base64": b64encode(source).decode("ascii"),
-                "payment_status": PaymentStatus.NOT_ATTEMPTED,
-                "payment_replayed": False,
-                "extraction_defects": [],
-                "repair_attempts": 0,
-                "reasoning_failure": None,
-                "reasoning_trace": [],
-                "inventory_snapshot": inventory_snapshot,
-                "policy_rules_fired": [],
-                "payment_authorized": False,
+                "intellipay.run.id": run_id,
+                "intellipay.document.format": path.suffix.lower().lstrip("."),
+                "intellipay.reasoning.mode": self._settings.reasoning_mode,
             },
-            config=self._config(run_id),
+        ) as span:
+            self._store.create_run(run_id, source_hash, self._settings.reasoning_mode)
+            inventory_snapshot = self._store.inventory()
+            final = self._graph.invoke(
+                {
+                    "run_id": run_id,
+                    "source_hash": source_hash,
+                    "document_id": path.name,
+                    "content": content,
+                    "source_base64": b64encode(source).decode("ascii"),
+                    "payment_status": PaymentStatus.NOT_ATTEMPTED,
+                    "payment_replayed": False,
+                    "extraction_defects": [],
+                    "repair_attempts": 0,
+                    "reasoning_failure": None,
+                    "reasoning_trace": [],
+                    "inventory_snapshot": inventory_snapshot,
+                    "policy_rules_fired": [],
+                    "payment_authorized": False,
+                },
+                config=self._config(run_id),
+            )
+            invoice = final["invoice"]
+            findings = final["findings"]
+            outcome = final["outcome"]
+            span.set_attribute("intellipay.route.outcome", outcome)
+            span.set_attribute(
+                "intellipay.finding.codes", sorted({finding.code for finding in findings})
+            )
+            self._store.complete_run(run_id, invoice, outcome, findings)
+            result = self._to_result(final)
+        self._telemetry.record_run(
+            outcome=outcome,
+            reasoning_mode=self._settings.reasoning_mode,
+            duration_ms=(perf_counter() - started) * 1000,
         )
-        invoice = final["invoice"]
-        findings = final["findings"]
-        outcome = final["outcome"]
-        self._store.complete_run(run_id, invoice, outcome, findings)
-        return self._to_result(final)
+        return result
 
     def resume(self, run_id: str) -> WorkflowResult:
         final = self._graph.invoke(None, config=self._config(run_id))
@@ -124,44 +147,51 @@ class InvoiceWorkflow:
         rationale: str,
     ) -> WorkflowResult:
         existing = self._store.get_review_task(review_task_id)
-        task = self._store.decide_review(
-            review_task_id,
-            action=action,
-            actor=actor,
-            rationale=rationale,
-        )
-        if existing.status == "COMPLETED":
-            snapshot = self._graph.get_state(self._config(task.run_id))
-            if not snapshot.values:
-                raise ValueError(f"No checkpoint exists for run {task.run_id}")
-            if "human_review" in snapshot.next:
-                final = self._graph.invoke(
-                    Command(resume={"action": task.action}),
-                    config=self._config(task.run_id),
-                )
-                if not final:
-                    raise RuntimeError(f"Review did not resume run {task.run_id}")
-                self._store.complete_run(
-                    task.run_id,
-                    final["invoice"],
-                    final["outcome"],
-                    final["findings"],
-                )
-                return self._to_result(final)
-            return self._to_result(snapshot.values)
-        final = self._graph.invoke(
-            Command(resume={"action": action}),
-            config=self._config(task.run_id),
-        )
-        if not final:
-            raise RuntimeError(f"Review did not resume run {task.run_id}")
-        self._store.complete_run(
-            task.run_id,
-            final["invoice"],
-            final["outcome"],
-            final["findings"],
-        )
-        return self._to_result(final)
+        with self._telemetry.span(
+            "intellipay.review.resolve",
+            {
+                "intellipay.run.id": existing.run_id,
+                "intellipay.review.action": action,
+            },
+        ):
+            task = self._store.decide_review(
+                review_task_id,
+                action=action,
+                actor=actor,
+                rationale=rationale,
+            )
+            if existing.status == "COMPLETED":
+                snapshot = self._graph.get_state(self._config(task.run_id))
+                if not snapshot.values:
+                    raise ValueError(f"No checkpoint exists for run {task.run_id}")
+                if "human_review" in snapshot.next:
+                    final = self._graph.invoke(
+                        Command(resume={"action": task.action}),
+                        config=self._config(task.run_id),
+                    )
+                    if not final:
+                        raise RuntimeError(f"Review did not resume run {task.run_id}")
+                    self._store.complete_run(
+                        task.run_id,
+                        final["invoice"],
+                        final["outcome"],
+                        final["findings"],
+                    )
+                    return self._to_result(final)
+                return self._to_result(snapshot.values)
+            final = self._graph.invoke(
+                Command(resume={"action": action}),
+                config=self._config(task.run_id),
+            )
+            if not final:
+                raise RuntimeError(f"Review did not resume run {task.run_id}")
+            self._store.complete_run(
+                task.run_id,
+                final["invoice"],
+                final["outcome"],
+                final["findings"],
+            )
+            return self._to_result(final)
 
     def review_case(self, review_task_id: str) -> ReviewCase:
         task = self._store.get_review_task(review_task_id)
@@ -229,15 +259,27 @@ class InvoiceWorkflow:
 
     def _build_graph(self):
         builder = StateGraph(WorkflowState)
-        builder.add_node("extract", self._extract)
-        builder.add_node("validate", self._validate)
-        builder.add_node("critique_extraction", self._critique_extraction)
-        builder.add_node("repair_extraction", self._repair_extraction)
-        builder.add_node("decide", self._decide)
-        builder.add_node("critique_decision", self._critique_decision)
-        builder.add_node("human_review", self._human_review)
-        builder.add_node("authorize_payment", self._authorize_payment)
-        builder.add_node("pay", self._pay)
+        builder.add_node("extract", self._observed_node("extract", self._extract))
+        builder.add_node("validate", self._observed_node("validate", self._validate))
+        builder.add_node(
+            "critique_extraction",
+            self._observed_node("critique_extraction", self._critique_extraction),
+        )
+        builder.add_node(
+            "repair_extraction",
+            self._observed_node("repair_extraction", self._repair_extraction),
+        )
+        builder.add_node("decide", self._observed_node("decide", self._decide))
+        builder.add_node(
+            "critique_decision",
+            self._observed_node("critique_decision", self._critique_decision),
+        )
+        builder.add_node("human_review", self._observed_node("human_review", self._human_review))
+        builder.add_node(
+            "authorize_payment",
+            self._observed_node("authorize_payment", self._authorize_payment),
+        )
+        builder.add_node("pay", self._observed_node("pay", self._pay))
         builder.add_edge(START, "extract")
         builder.add_edge("extract", "validate")
         builder.add_conditional_edges(
@@ -277,6 +319,37 @@ class InvoiceWorkflow:
             checkpointer=SqliteSaver(self._checkpoint_connection, serde=serializer)
         )
 
+    def _observed_node(self, name: str, node):
+        def observed(state: WorkflowState) -> dict[str, object]:
+            started = perf_counter()
+            status = "SUCCEEDED"
+            non_error_exceptions = (GraphInterrupt,) if name == "human_review" else ()
+            try:
+                with self._telemetry.span(
+                    f"intellipay.node.{name}",
+                    {
+                        "intellipay.run.id": state["run_id"],
+                        "intellipay.graph.node": name,
+                    },
+                    non_error_exceptions=non_error_exceptions,
+                ):
+                    return node(state)
+            except GraphInterrupt:
+                status = "INTERRUPTED"
+                raise
+            except Exception:
+                status = "FAILED"
+                raise
+            finally:
+                self._telemetry.record_node(
+                    node=name,
+                    status=status,
+                    duration_ms=(perf_counter() - started) * 1000,
+                )
+
+        observed.__name__ = name
+        return observed
+
     def _extract(self, state: WorkflowState) -> dict[str, object]:
         path = Path(state["document_id"])
         has_ambiguous_money = (
@@ -296,8 +369,10 @@ class InvoiceWorkflow:
         request = ExtractionRequest(document_id=state["document_id"], content=state["content"])
         started = perf_counter()
         try:
-            result = self._provider.extract_invoice(request)
-            candidate = InvoiceCandidate.model_validate(result.candidate)
+            with self._reasoning_span(state, "extract", attempt=0) as span:
+                result = self._provider.extract_invoice(request)
+                candidate = InvoiceCandidate.model_validate(result.candidate)
+                span.set_attribute("gen_ai.request.model", result.model)
         except Exception as error:
             if not self._parsers.supports(path):
                 raise
@@ -459,8 +534,10 @@ class InvoiceWorkflow:
         )
         started = perf_counter()
         try:
-            result = self._provider.critique_decision(request)
-            critique = DecisionCritique.model_validate(result.critique)
+            with self._reasoning_span(state, "critique_decision", attempt=0) as span:
+                result = self._provider.critique_decision(request)
+                critique = DecisionCritique.model_validate(result.critique)
+                span.set_attribute("gen_ai.request.model", result.model)
         except Exception as error:
             trace = self._reasoning_trace(
                 operation="critique_decision",
@@ -500,8 +577,11 @@ class InvoiceWorkflow:
         )
         started = perf_counter()
         try:
-            critique = self._provider.critique_extraction(request)
-            defects = [ExtractionDefect.model_validate(defect) for defect in critique.defects]
+            with self._reasoning_span(
+                state, "critique_extraction", attempt=state["repair_attempts"]
+            ):
+                critique = self._provider.critique_extraction(request)
+                defects = [ExtractionDefect.model_validate(defect) for defect in critique.defects]
         except Exception as error:
             trace = self._reasoning_trace(
                 operation="critique_extraction",
@@ -549,8 +629,10 @@ class InvoiceWorkflow:
         )
         started = perf_counter()
         try:
-            result = self._provider.repair_invoice(request)
-            candidate = InvoiceCandidate.model_validate(result.candidate)
+            with self._reasoning_span(state, "repair_extraction", attempt=attempt) as span:
+                result = self._provider.repair_invoice(request)
+                candidate = InvoiceCandidate.model_validate(result.candidate)
+                span.set_attribute("gen_ai.request.model", result.model)
         except Exception as error:
             trace = self._reasoning_trace(
                 operation="repair_extraction",
@@ -596,6 +678,7 @@ class InvoiceWorkflow:
             "payment_recorded",
             {"payment_id": payment_id, "status": status, "replayed": replayed},
         )
+        self._telemetry.record_payment(status=status, replayed=replayed)
         return {
             "payment_id": payment_id,
             "payment_status": status,
@@ -637,7 +720,7 @@ class InvoiceWorkflow:
         request_json = (
             request.model_dump_json() if hasattr(request, "model_dump_json") else repr(request)
         )
-        return ReasoningTraceEntry(
+        trace_entry = ReasoningTraceEntry(
             operation=operation,
             attempt=attempt,
             status=status,
@@ -647,6 +730,24 @@ class InvoiceWorkflow:
             latency_ms=max(0, round((perf_counter() - started) * 1000)),
             request_fingerprint=sha256(request_json.encode()).hexdigest(),
             error_type=type(error).__name__ if error else None,
+        )
+        self._telemetry.record_reasoning(
+            operation=operation,
+            provider=self._settings.reasoning_mode,
+            status=status,
+            duration_ms=trace_entry.latency_ms,
+        )
+        return trace_entry
+
+    def _reasoning_span(self, state: WorkflowState, operation: str, *, attempt: int):
+        return self._telemetry.span(
+            f"intellipay.reasoning.{operation}",
+            {
+                "intellipay.run.id": state["run_id"],
+                "intellipay.repair.attempt": attempt,
+                "gen_ai.operation.name": operation,
+                "gen_ai.system": self._settings.reasoning_mode,
+            },
         )
 
     @staticmethod
