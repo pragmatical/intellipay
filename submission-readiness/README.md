@@ -17,17 +17,21 @@ Assessment date: 2026-08-12
 
 ## Executive Assessment
 
-The analysis and ADRs provide a strong design foundation: business risks are explicit, the workflow has controlled agent boundaries, uncertainty is routed to review, and payment is isolated. The current repository does not yet contain the application, project manifest, database setup, or tests. As a result, the strongest criteria today are Presentation and Shipping Mindset; the criteria that require executable evidence remain unproven.
+IntelliPay now has a runnable application, typed LangGraph workflow, deterministic multi-format corpus processing, bounded model reasoning, durable human review, and idempotent mock payment. The complete offline suite passes 52 tests, and the 20-case corpus report shows full route and finding agreement, full hard-control recall, and zero prohibited payments. Functionality, Code Quality, Agentic Sophistication, Shipping Mindset, Above/Beyond, and UI/UX have repeatable evidence.
 
-The highest-leverage strategy is to ship one thin vertical slice through ingestion, extraction, validation, approval, and mock payment before expanding storage, governance, or production integrations. The slice must include a visible model-assisted self-correction path and a small review experience, because those directly earn Agentic Sophistication and UI/UX evidence.
+The main submission gap is now presentation and release evidence rather than core implementation. The repository lacks a concise golden-demo script or recording, a screenshot set, a clean-environment acceptance transcript, consolidated performance/cost results, and a single limitations/security review. Finance label approval and observed AP usability measures also remain external; completed tabletop simulations must not be presented as participant evidence.
 
-## Current Scorecard
+## Scorecards
 
 Status meanings:
 
 - **Demonstrated:** Executable behavior and repeatable evidence exist.
 - **Designed:** The repository explains the behavior but cannot prove it yet.
 - **Missing:** Neither sufficient design nor executable proof exists.
+
+### Original Readiness Baseline
+
+This table preserves the initial repository assessment for reference. It describes the evidence available before implementation began and is not the current project status.
 
 | Criterion | Status | Existing strength | Primary gap | Proof required |
 |---|---|---|---|---|
@@ -38,6 +42,35 @@ Status meanings:
 | Presentation | Designed | Business baseline, target outcomes, risk mapping, diagrams, and ADR rationale | No live narrative backed by measured output | Present baseline, decision rationale, live cases, metrics, and business impact in one coherent demo |
 | Above/Beyond | Designed | Revision handling, replay safety, policy versioning, adversarial cases, and payment idempotency | Differentiators are not implemented or visible | Make at least revision safety, prompt-injection resistance, and replay idempotency executable |
 | UI/UX | Designed | A structured result contract and reviewer information needs are described | No review screen, status history, or human decision action | Provide a lightweight review console with evidence, findings, reasons, and explicit actions |
+
+### Current Progress
+
+This table assesses the executable evidence currently present in the repository.
+
+| Criterion | Status | Existing strength | Primary gap | Proof required |
+|---|---|---|---|---|
+| Functionality | Demonstrated | CLI and LangGraph execute approve, reject, escalate, review, and payment routes across all 20 cases | Clean-environment acceptance transcript is not captured | Reproduce setup, corpus evaluation, and representative workflows from a clean checkout |
+| Code Quality | Demonstrated | Typed boundaries, dependency injection, durable storage, structured events, and 52 passing tests | No consolidated security review or SQLite lock/process-restart fault evidence | Capture lint/type/test evidence and close or register remaining resilience gaps |
+| Agentic Sophistication | Demonstrated | Local and Grok-compatible providers, structured output, critic defects, bounded repair, fallback, prompt-injection isolation, and typed traces | Credentialed live-model behavior remains optional and environment-dependent | Preserve offline evidence; add a redacted live smoke trace only when credentials are approved |
+| Shipping Mindset | Demonstrated | Local-first implementation ships the complete core workflow while explicitly deferring production infrastructure | No immutable prototype release identifier | Complete acceptance evidence and tag the demonstrated prototype |
+| Presentation | Designed | Business baseline, architecture, ADRs, measured corpus results, and live review UI are available | No concise demo script/recording, screenshots, or consolidated result narrative | Package and rehearse the ten-minute golden demo with reproducible evidence |
+| Above/Beyond | Demonstrated | Revision safety, equivalent-format identity, prompt-injection resistance, strict checkpoint serialization, and replay idempotency are executable | Differentiators are distributed across tests and verification records | Surface the strongest three in the golden demo |
+| UI/UX | Demonstrated | Authenticated queue and detail views expose source, normalized facts, findings, rules, history, rationale, and constrained actions on desktop/mobile | Real AP handling-time, confidence, and comprehension evidence is absent | Run representative AP sessions or explicitly retain this as an external limitation |
+
+## Highest-Leverage Next Actions
+
+1. **Produce the acceptance and resilience evidence pack.** Run setup from a clean checkout; capture tests, lint, formatting, corpus metrics, required-field accuracy, representative traces, model/payment outage behavior, SQLite lock or restart behavior, latency, and model-use/cost summaries. Record unresolved items in one limitations and security review.
+2. **Package the golden demo.** Create a ten-minute script covering the business baseline, INV-1001 approval and replay, a bounded repair, INV-1002 review, a hard rejection, revision safety, and measured corpus results. Capture desktop/mobile screenshots and a completed-review state, then rehearse from the documented setup.
+3. **Complete external evidence where participants are available.** Obtain authorized finance/domain approval for the 20 `simulated-reviewed` labels and run AP sessions for handling time, confidence, help requests, and comprehension. These improve trust and UI evidence but should remain clearly pending if submission timing does not permit them.
+
+## Current Executable Evidence
+
+- `uv run pytest -q` passes 52 tests.
+- `uv run intellipay-evaluate --output evaluation/stage2-report.json` evaluates 20/20 cases with zero errors and zero prohibited payments.
+- `uv run intellipay <invoice-path>` demonstrates routine, rejected, and escalated CLI outcomes.
+- `uv run intellipay-review --host 0.0.0.0 --port 8000` serves the authenticated review workflow.
+- `docs/planning/stage-2-verification.md`, `stage-3-verification.md`, and `stage-4-verification.md` record repeatable focused checks.
+- `docs/runbooks/finance-domain-label-approval-simulation.md` and `accounts-payable-usability-simulation.md` record completed simulations and their limitations.
 
 Documentation is not executable proof. Update a status to **Demonstrated** only when a repeatable command, test, screenshot, trace, or recorded metric supports it.
 
