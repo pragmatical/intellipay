@@ -4,7 +4,7 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** The first runnable Python slice implements the typed reasoning boundary with deterministic local simulation and opt-in live Grok extraction. Workflow orchestration, persistence, financial controls, payment, and the review interface remain implementation work.
+> **Current status:** Stage 1 is implemented and verified: INV-1001 completes the LangGraph workflow with deterministic controls, durable checkpoints, one authorized idempotent mock payment, bounded extraction repair, and optional live Grok extraction. Multi-format corpus control and the review interface remain next.
 
 ## Run the Reasoning Slice
 
@@ -182,7 +182,7 @@ Workflow modules, migrations, evaluation assets, and the review interface will b
 
 ## Implementation Sequence
 
-The [functional MVP implementation plan](docs/planning/implementation-plan.md) defines detailed deliverables, measures, verification procedures, dependencies, risks, and exit gates for each phase.
+The [functional MVP implementation plan](docs/planning/implementation-plan.md) defines detailed deliverables, measures, verification procedures, dependencies, risks, and exit gates for each phase. Stage 1 commands and evidence are recorded in the [Stage 1 verification record](docs/planning/stage-1-verification.md).
 
 1. Build canonical models, format adapters, inventory persistence, deterministic validation, and mock payment.
 2. Connect the vertical slice with LangGraph and prove approve, reject, escalate, and replay-safe payment routes.

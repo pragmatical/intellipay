@@ -53,7 +53,9 @@ def test_local_mode_is_default_and_extracts_fixture_deterministically() -> None:
     assert result.candidate == invoice_candidate()
 
 
-def test_live_mode_fails_closed_without_xai_api_key() -> None:
+def test_live_mode_fails_closed_without_xai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("XAI_API_KEY", raising=False)
+    monkeypatch.delenv("INTELLIPAY_XAI_API_KEY", raising=False)
     settings = Settings(reasoning_mode=ReasoningMode.LIVE, _env_file=None)
 
     with pytest.raises(ValueError, match="XAI_API_KEY is required"):

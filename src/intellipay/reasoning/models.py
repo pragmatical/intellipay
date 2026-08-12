@@ -51,6 +51,36 @@ class ExtractionResult(BaseModel):
     candidate: InvoiceCandidate
 
 
+class ExtractionDefect(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1)
+    field: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+
+
+class ExtractionCritiqueRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    candidate: InvoiceCandidate
+    finding_codes: list[str]
+
+
+class ExtractionCritique(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    defects: list[ExtractionDefect]
+
+
+class ExtractionRepairRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    extraction: ExtractionRequest
+    candidate: InvoiceCandidate
+    defects: list[ExtractionDefect]
+    attempt: int = Field(ge=1)
+
+
 class DecisionCritiqueRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

@@ -105,14 +105,16 @@ Accounts payable can submit a clean invoice, see the extracted facts and checks 
 
 ### Outcome Gate
 
-- INV-1001 reaches `APPROVE` and produces one successful mock payment.
-- Re-running the same accepted invoice returns or references the existing payment result without a second side effect.
-- A synthetic negative quantity reaches `REJECT` and cannot invoke payment.
-- A controlled ambiguous fixture completes one structured extraction and critic-repair cycle, then passes the same deterministic checks as parser output.
-- Graph-route tests prove validation precedes approval and authorization precedes payment.
-- Restarting after a committed node resumes without repeating that node's side effect.
-- The package installs from a clean environment, migrations are repeatable, and static and focused automated checks pass.
-- The complete verification procedure can be repeated without manual database edits or hidden setup.
+- [x] INV-1001 reaches `APPROVE` and produces one successful mock payment.
+- [x] Re-running the same accepted invoice returns or references the existing payment result without a second side effect.
+- [x] A synthetic negative quantity reaches `REJECT` and cannot invoke payment.
+- [x] A controlled ambiguous fixture completes one structured extraction and critic-repair cycle, then passes the same deterministic checks as parser output.
+- [x] Graph-route tests prove validation precedes approval and authorization precedes payment.
+- [x] Restarting after a committed node resumes without repeating that node's side effect.
+- [x] The package installs from a clean environment, migrations are repeatable, and static and focused automated checks pass.
+- [x] The complete verification procedure can be repeated without manual database edits or hidden setup.
+
+**Gate status:** Passed on 2026-08-12. See the [Stage 1 verification record](stage-1-verification.md) for commands and measured evidence.
 
 ## Stage 2: Control Every Supplied Invoice Deterministically
 

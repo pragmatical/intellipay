@@ -8,6 +8,10 @@ from intellipay.reasoning.models import (
     DecisionCritique,
     DecisionCritiqueRequest,
     DecisionCritiqueResult,
+    ExtractionCritique,
+    ExtractionCritiqueRequest,
+    ExtractionDefect,
+    ExtractionRepairRequest,
     ExtractionRequest,
     ExtractionResult,
     InvoiceCandidate,
@@ -23,7 +27,7 @@ class LocalReasoningProvider:
         "invoice_number": r"^Invoice Number:\s*(.+)$",
         "invoice_date": r"^Date:\s*(.+)$",
         "due_date": r"^Due Date:\s*(.+)$",
-        "subtotal": r"^Subtotal:\s*\$([\d,]+\.\d{2})$",
+        "subtotal": r"^Subtotal:\s*\$([\dO,]+\.[\dO]{2})$",
         "tax": r"^Tax.*:\s*\$([\d,]+\.\d{2})$",
         "total_amount": r"^Total Amount:\s*\$([\d,]+\.\d{2})$",
         "payment_terms": r"^Payment Terms:\s*(.+)$",
@@ -53,7 +57,7 @@ class LocalReasoningProvider:
             invoice_date=fields["invoice_date"],
             due_date=fields["due_date"],
             currency=Currency.USD,
-            subtotal=self._money(fields["subtotal"]),
+            subtotal=self._money(fields["subtotal"], preserve_ocr_error=True),
             tax=self._money(fields["tax"]),
             total_amount=self._money(fields["total_amount"]),
             payment_terms=fields["payment_terms"],
@@ -64,6 +68,31 @@ class LocalReasoningProvider:
             provider="simulated",
             model="deterministic-v1",
             candidate=candidate,
+        )
+
+    def critique_extraction(self, request: ExtractionCritiqueRequest) -> ExtractionCritique:
+        defects = []
+        if "SUBTOTAL_MISMATCH" in request.finding_codes:
+            defects.append(
+                ExtractionDefect(
+                    code="SUBTOTAL_INCONSISTENT_WITH_LINES",
+                    field="subtotal",
+                    message="Subtotal does not equal the sum of line items.",
+                )
+            )
+        return ExtractionCritique(defects=defects)
+
+    def repair_invoice(self, request: ExtractionRepairRequest) -> ExtractionResult:
+        result = self.extract_invoice(request.extraction)
+        subtotal_match = self._required_match(
+            self._FIELD_PATTERNS["subtotal"], request.extraction.content
+        )
+        return result.model_copy(
+            update={
+                "candidate": result.candidate.model_copy(
+                    update={"subtotal": self._money(subtotal_match)}
+                )
+            }
         )
 
     def critique_decision(self, request: DecisionCritiqueRequest) -> DecisionCritiqueResult:
@@ -87,5 +116,7 @@ class LocalReasoningProvider:
         return match.group(1).strip()
 
     @staticmethod
-    def _money(value: str) -> Decimal:
-        return Decimal(value.replace(",", ""))
+    def _money(value: str, *, preserve_ocr_error: bool = False) -> Decimal:
+        if preserve_ocr_error and "O" in value:
+            return Decimal("500.00")
+        return Decimal(value.replace(",", "").replace("O", "0"))

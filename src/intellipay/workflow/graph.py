@@ -1,13 +1,21 @@
+import sqlite3
 from hashlib import sha256
 from pathlib import Path
 from typing import TypedDict
 from uuid import uuid4
 
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 
 from intellipay.config import Settings
 from intellipay.reasoning import ReasoningProvider, create_reasoning_provider
-from intellipay.reasoning.models import ExtractionRequest, InvoiceCandidate
+from intellipay.reasoning.models import (
+    ExtractionCritiqueRequest,
+    ExtractionDefect,
+    ExtractionRepairRequest,
+    ExtractionRequest,
+    InvoiceCandidate,
+)
 from intellipay.workflow.models import Finding, Outcome, PaymentStatus, WorkflowResult
 from intellipay.workflow.storage import SQLiteStore
 from intellipay.workflow.validation import validate_invoice
@@ -20,6 +28,11 @@ class WorkflowState(TypedDict, total=False):
     content: str
     invoice: InvoiceCandidate
     findings: list[Finding]
+    extraction_defects: list[ExtractionDefect]
+    repair_attempts: int
+    inventory_snapshot: dict[str, str]
+    policy_rules_fired: list[str]
+    payment_authorized: bool
     outcome: Outcome
     payment_status: PaymentStatus
     payment_id: str | None
@@ -37,6 +50,9 @@ class InvoiceWorkflow:
         self._provider = provider or create_reasoning_provider(settings)
         self._store = store or SQLiteStore(settings.database_path)
         self._store.initialize()
+        self._checkpoint_connection = sqlite3.connect(
+            settings.database_path, check_same_thread=False
+        )
         self._graph = self._build_graph()
 
     def process(self, path: Path) -> WorkflowResult:
@@ -44,6 +60,7 @@ class InvoiceWorkflow:
         source_hash = sha256(content.encode()).hexdigest()
         run_id = f"run_{uuid4().hex}"
         self._store.create_run(run_id, source_hash, self._settings.reasoning_mode)
+        inventory_snapshot = self._store.inventory()
         final = self._graph.invoke(
             {
                 "run_id": run_id,
@@ -52,19 +69,41 @@ class InvoiceWorkflow:
                 "content": content,
                 "payment_status": PaymentStatus.NOT_ATTEMPTED,
                 "payment_replayed": False,
-            }
+                "extraction_defects": [],
+                "repair_attempts": 0,
+                "inventory_snapshot": inventory_snapshot,
+                "policy_rules_fired": [],
+                "payment_authorized": False,
+            },
+            config=self._config(run_id),
         )
         invoice = final["invoice"]
         findings = final["findings"]
         outcome = final["outcome"]
         self._store.complete_run(run_id, invoice, outcome, findings)
+        return self._to_result(final)
+
+    def resume(self, run_id: str) -> WorkflowResult:
+        final = self._graph.invoke(None, config=self._config(run_id))
+        if not final:
+            raise ValueError(f"No checkpoint exists for run {run_id}")
+        return self._to_result(final)
+
+    def _to_result(self, final: WorkflowState) -> WorkflowResult:
+        run_id = final["run_id"]
         return WorkflowResult(
             run_id=run_id,
-            source_hash=source_hash,
+            source_hash=final["source_hash"],
             reasoning_mode=self._settings.reasoning_mode,
-            invoice=invoice,
-            outcome=outcome,
-            findings=findings,
+            invoice=final["invoice"],
+            outcome=final["outcome"],
+            findings=final["findings"],
+            extraction_defects=final["extraction_defects"],
+            repair_attempts=final["repair_attempts"],
+            inventory_snapshot=final["inventory_snapshot"],
+            policy_rules_fired=final["policy_rules_fired"],
+            event_types=self._store.event_types(run_id),
+            payment_authorized=final["payment_authorized"],
             payment_status=final["payment_status"],
             payment_id=final.get("payment_id"),
             payment_replayed=final["payment_replayed"],
@@ -74,16 +113,28 @@ class InvoiceWorkflow:
         builder = StateGraph(WorkflowState)
         builder.add_node("extract", self._extract)
         builder.add_node("validate", self._validate)
+        builder.add_node("critique_extraction", self._critique_extraction)
+        builder.add_node("repair_extraction", self._repair_extraction)
         builder.add_node("decide", self._decide)
+        builder.add_node("authorize_payment", self._authorize_payment)
         builder.add_node("pay", self._pay)
         builder.add_edge(START, "extract")
         builder.add_edge("extract", "validate")
-        builder.add_edge("validate", "decide")
         builder.add_conditional_edges(
-            "decide", self._route_after_decision, {"pay": "pay", "finish": END}
+            "validate",
+            self._route_after_validation,
+            {"repair": "critique_extraction", "decide": "decide"},
         )
+        builder.add_edge("critique_extraction", "repair_extraction")
+        builder.add_edge("repair_extraction", "validate")
+        builder.add_conditional_edges(
+            "decide",
+            self._route_after_decision,
+            {"authorize": "authorize_payment", "finish": END},
+        )
+        builder.add_edge("authorize_payment", "pay")
         builder.add_edge("pay", END)
-        return builder.compile()
+        return builder.compile(checkpointer=SqliteSaver(self._checkpoint_connection))
 
     def _extract(self, state: WorkflowState) -> dict[str, object]:
         result = self._provider.extract_invoice(
@@ -97,7 +148,7 @@ class InvoiceWorkflow:
         return {"invoice": result.candidate}
 
     def _validate(self, state: WorkflowState) -> dict[str, object]:
-        findings = validate_invoice(state["invoice"], self._store.inventory())
+        findings = validate_invoice(state["invoice"], state["inventory_snapshot"])
         self._store.record_event(
             state["run_id"],
             "invoice_validated",
@@ -107,10 +158,54 @@ class InvoiceWorkflow:
 
     def _decide(self, state: WorkflowState) -> dict[str, object]:
         outcome = Outcome.REJECT if state["findings"] else Outcome.APPROVE
-        self._store.record_event(state["run_id"], "invoice_decided", {"outcome": outcome})
-        return {"outcome": outcome}
+        policy_rules = ["HARD_FINDING_REJECT"] if state["findings"] else ["NO_HARD_FINDINGS"]
+        self._store.record_event(
+            state["run_id"],
+            "invoice_decided",
+            {"outcome": outcome, "policy_rules": policy_rules},
+        )
+        return {"outcome": outcome, "policy_rules_fired": policy_rules}
+
+    def _authorize_payment(self, state: WorkflowState) -> dict[str, object]:
+        authorized = state["outcome"] is Outcome.APPROVE and not state["findings"]
+        self._store.record_event(state["run_id"], "payment_authorized", {"authorized": authorized})
+        return {
+            "payment_authorized": authorized,
+            "policy_rules_fired": [*state["policy_rules_fired"], "PAYMENT_AUTHORIZED"],
+        }
+
+    def _critique_extraction(self, state: WorkflowState) -> dict[str, object]:
+        critique = self._provider.critique_extraction(
+            ExtractionCritiqueRequest(
+                candidate=state["invoice"],
+                finding_codes=[finding.code for finding in state["findings"]],
+            )
+        )
+        self._store.record_event(
+            state["run_id"],
+            "extraction_critiqued",
+            {"defect_codes": [defect.code for defect in critique.defects]},
+        )
+        return {"extraction_defects": critique.defects}
+
+    def _repair_extraction(self, state: WorkflowState) -> dict[str, object]:
+        attempt = state["repair_attempts"] + 1
+        result = self._provider.repair_invoice(
+            ExtractionRepairRequest(
+                extraction=ExtractionRequest(
+                    document_id=state["document_id"], content=state["content"]
+                ),
+                candidate=state["invoice"],
+                defects=state["extraction_defects"],
+                attempt=attempt,
+            )
+        )
+        self._store.record_event(state["run_id"], "extraction_repaired", {"attempt": attempt})
+        return {"invoice": result.candidate, "repair_attempts": attempt}
 
     def _pay(self, state: WorkflowState) -> dict[str, object]:
+        if not state["payment_authorized"]:
+            raise RuntimeError("Payment requires explicit authorization")
         invoice = state["invoice"]
         idempotency_key = sha256(
             f"{invoice.invoice_number}|{invoice.vendor_name}|{invoice.total_amount}".encode()
@@ -129,4 +224,18 @@ class InvoiceWorkflow:
 
     @staticmethod
     def _route_after_decision(state: WorkflowState) -> str:
-        return "pay" if state["outcome"] is Outcome.APPROVE else "finish"
+        return "authorize" if state["outcome"] is Outcome.APPROVE else "finish"
+
+    @staticmethod
+    def _route_after_validation(state: WorkflowState) -> str:
+        repairable = {"SUBTOTAL_MISMATCH", "TOTAL_MISMATCH"}
+        finding_codes = {finding.code for finding in state["findings"]}
+        return (
+            "repair"
+            if finding_codes and finding_codes <= repairable and state["repair_attempts"] == 0
+            else "decide"
+        )
+
+    @staticmethod
+    def _config(run_id: str) -> dict[str, dict[str, str]]:
+        return {"configurable": {"thread_id": run_id}}

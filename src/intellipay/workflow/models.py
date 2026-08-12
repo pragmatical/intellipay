@@ -3,7 +3,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from intellipay.config import ReasoningMode
-from intellipay.reasoning.models import InvoiceCandidate
+from intellipay.reasoning.models import ExtractionDefect, InvoiceCandidate
 
 
 class Outcome(StrEnum):
@@ -33,6 +33,12 @@ class WorkflowResult(BaseModel):
     invoice: InvoiceCandidate
     outcome: Outcome
     findings: list[Finding]
+    extraction_defects: list[ExtractionDefect] = Field(default_factory=list)
+    repair_attempts: int = 0
+    inventory_snapshot: dict[str, str]
+    policy_rules_fired: list[str]
+    event_types: list[str]
+    payment_authorized: bool = False
     payment_status: PaymentStatus
     payment_id: str | None = None
     payment_replayed: bool = False

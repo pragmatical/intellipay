@@ -7,6 +7,7 @@ Planning is solution-owned: it describes what will be built and how completion w
 ## Plans
 
 - [Functional MVP implementation plan](implementation-plan.md)
+- [Stage 1 verification record](stage-1-verification.md)
 
 ## Planning Rules
 

@@ -9,6 +9,42 @@ from uuid import uuid4
 from intellipay.reasoning.models import InvoiceCandidate
 from intellipay.workflow.models import Finding, Outcome, PaymentStatus
 
+MIGRATIONS = (
+    (
+        1,
+        """
+        CREATE TABLE IF NOT EXISTS inventory (
+            item TEXT PRIMARY KEY,
+            available_quantity TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS runs (
+            run_id TEXT PRIMARY KEY,
+            source_hash TEXT NOT NULL,
+            invoice_number TEXT,
+            reasoning_mode TEXT NOT NULL,
+            outcome TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS events (
+            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL REFERENCES runs(run_id),
+            event_type TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS payments (
+            idempotency_key TEXT PRIMARY KEY,
+            payment_id TEXT NOT NULL UNIQUE,
+            invoice_number TEXT NOT NULL,
+            amount TEXT NOT NULL,
+            currency TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        """,
+    ),
+)
+
 
 class SQLiteStore:
     def __init__(self, path: Path) -> None:
@@ -17,38 +53,24 @@ class SQLiteStore:
     def initialize(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS inventory (
-                    item TEXT PRIMARY KEY,
-                    available_quantity TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS runs (
-                    run_id TEXT PRIMARY KEY,
-                    source_hash TEXT NOT NULL,
-                    invoice_number TEXT,
-                    reasoning_mode TEXT NOT NULL,
-                    outcome TEXT,
-                    created_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS events (
-                    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    run_id TEXT NOT NULL REFERENCES runs(run_id),
-                    event_type TEXT NOT NULL,
-                    payload TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS payments (
-                    idempotency_key TEXT PRIMARY KEY,
-                    payment_id TEXT NOT NULL UNIQUE,
-                    invoice_number TEXT NOT NULL,
-                    amount TEXT NOT NULL,
-                    currency TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-                """
+            connection.execute(
+                """CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT NOT NULL
+                )"""
             )
+            applied = {
+                row["version"]
+                for row in connection.execute("SELECT version FROM schema_migrations")
+            }
+            for version, script in MIGRATIONS:
+                if version in applied:
+                    continue
+                connection.executescript(script)
+                connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (version, self._now()),
+                )
             connection.executemany(
                 "INSERT OR IGNORE INTO inventory(item, available_quantity) VALUES (?, ?)",
                 [("WidgetA", "15"), ("WidgetB", "10"), ("GadgetX", "5")],
@@ -127,11 +149,27 @@ class SQLiteStore:
             row = connection.execute("SELECT COUNT(*) AS count FROM payments").fetchone()
         return int(row["count"])
 
+    def schema_version(self) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations"
+            ).fetchone()
+        return int(row["version"])
+
+    def event_types(self, run_id: str) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT event_type FROM events WHERE run_id = ? ORDER BY event_id",
+                (run_id,),
+            ).fetchall()
+        return [row["event_type"] for row in rows]
+
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:
         connection = sqlite3.connect(self._path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA journal_mode = WAL")
         try:
             with connection:
                 yield connection
