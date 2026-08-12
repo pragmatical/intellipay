@@ -51,7 +51,8 @@
 				"ms-python.debugpy",
 				"ms-toolsai.jupyter",
 				"charliermarsh.ruff",
-				"tamasfe.even-better-toml"
+				"tamasfe.even-better-toml",
+				"tomoki1207.pdf"
 			],
 			"settings": {
 				"python.defaultInterpreterPath": "/usr/local/bin/python",

@@ -218,6 +218,8 @@ Retries use exponential backoff with jitter for transient model and payment erro
 
 ## Delivery Plan
 
+The authoritative phased delivery plan, dependencies, risks, verification steps, and functional MVP exit gates are defined in the [Functional MVP Implementation Plan](../planning/implementation-plan.md). The increments below summarize the intended progression.
+
 ### Increment 1: Reproducible Core
 
 - Canonical models and format-specific parsers.

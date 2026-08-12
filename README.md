@@ -146,12 +146,15 @@ See the [solution evaluation approach](docs/analysis/evaluation-approach.md) for
 | [`data/invoices/`](data/invoices/) | Heterogeneous invoice fixtures and edge cases |
 | [`docs/analysis/`](docs/analysis/) | Business case, proposed solution, architecture, and evaluation approach |
 | [`docs/adr/`](docs/adr/) | Architecture decision records and trade-offs |
+| [`docs/planning/`](docs/planning/) | Phased implementation plan and functional MVP exit gates |
 | [`.github/skills/`](.github/skills/) | Repository-specific Copilot workflows |
 | [`.devcontainer/`](.devcontainer/) | Reproducible local development environment |
 
 Application modules, migrations, tests, evaluation assets, and the review interface will be added as the implementation progresses.
 
 ## Implementation Sequence
+
+The [functional MVP implementation plan](docs/planning/implementation-plan.md) defines detailed deliverables, verification, demonstrations, dependencies, risks, and exit gates for each phase.
 
 1. Build canonical models, format adapters, inventory persistence, deterministic validation, and mock payment.
 2. Connect the vertical slice with LangGraph and prove approve, reject, escalate, and replay-safe payment routes.
@@ -165,5 +168,6 @@ Application modules, migrations, tests, evaluation assets, and the review interf
 - [Proposed solution](docs/analysis/proposed-solution.md)
 - [Architecture](docs/analysis/architecture.md)
 - [Evaluation approach and needs](docs/analysis/evaluation-approach.md)
+- [Functional MVP implementation plan](docs/planning/implementation-plan.md)
 - [Architecture decision records](docs/adr/0001-use-langgraph-state-machine.md)
 - [Original case context](context/README.md)
