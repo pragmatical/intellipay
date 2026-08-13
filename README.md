@@ -4,18 +4,17 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
-> **Current status:** Stages 1 through 4 are implemented and engineering-verified. The complete supplied corpus is controlled deterministically, ambiguous extraction is bounded and safely traced, and escalations now pause for authenticated, policy-constrained human review before the same checkpoint resumes. The finance/domain label review and AP usability protocols have completed tabletop simulations; authorized label approval and observed participant timing, confidence, and comprehension baselines remain external follow-up work.
+> **Simulated human-in-the-loop review:** Two review protocols were rehearsed with LLM-simulated roles: a [finance and domain label review](docs/runbooks/finance-domain-label-approval-simulation.md) covering expected routes, findings, and payment outcomes across the corpus, and an [accounts-payable usability review](docs/runbooks/accounts-payable-usability-simulation.md) covering exception comprehension, evidence, and constrained actions through synthetic AP personas. These tabletop exercises validate the review process and expose gaps before using staff time; they do not claim delegated finance approval or representative human-participant results.
 
-## Demo Quickstart
+## See Outcomes in Action
 
-The default demonstration runs locally with deterministic reasoning and mock payment. After installing the locked dependencies, start it with:
-
-```bash
-uv sync --locked --all-groups
-uv run intellipay-demo
-```
+The default demonstration runs locally with deterministic reasoning and mock payment.
 
 Follow the [local demo and observability guide](docs/local-demo-and-observability.md) for clean-machine preparation, disconnected operation without Docker, the approval walkthrough, durable JSONL event inspection, troubleshooting, and optional `.env` configuration for the real xAI model.
+
+## Connect the Application to Business Value
+
+See the [business case analysis](docs/analysis/business-case-analysis.md) for how IntelliPay's ingestion, validation, review, reasoning, payment, and audit capabilities address Acme's processing errors, five-day cycle time, avoidable cost, payment leakage, and control exposure.
 
 ## Run the Reasoning Slice
 
