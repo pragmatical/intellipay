@@ -79,7 +79,7 @@ LangGraph coordinates these responsibilities as a typed, durable state machine. 
 
 The workflow moves through intake, extraction, deterministic validation, approval policy, human review when needed, idempotent payment, and reconciliation. Ambiguous extraction can enter a bounded Grok-assisted correction loop; hard failures and unresolved uncertainty cannot reach payment.
 
-See the [detailed LangGraph workflow and routing logic](docs/analysis/proposed-solution.md#langgraph-workflow) in the proposed solution.
+See the [current LangGraph workflow and control boundaries](docs/architecture/architecture.md#workflow-architecture) in the technical architecture.
 
 Every run preserves the source identity, canonical invoice, extraction evidence, validation findings, rules fired, route, model metadata, and payment result needed to explain and replay the decision.
 
@@ -226,8 +226,9 @@ The [functional MVP implementation plan](docs/planning/implementation-plan.md) d
 ## Solution Documentation
 
 - [Business case analysis](docs/analysis/business-case-analysis.md)
-- [Proposed solution](docs/analysis/proposed-solution.md)
-- [Architecture](docs/analysis/architecture.md)
+- [Solution architecture](docs/architecture/solution-architecture.md)
+- [Technical architecture](docs/architecture/architecture.md)
+- [Original proposed solution](docs/analysis/proposed-solution.md)
 - [Evaluation approach and needs](docs/analysis/evaluation-approach.md)
 - [Functional MVP implementation plan](docs/planning/implementation-plan.md)
 - [Architecture decision records](docs/adr/0001-use-langgraph-state-machine.md)

@@ -63,6 +63,6 @@ In-memory contracts must prove a root workflow span, direct graph-node children,
 ## More Information
 
 - [Remaining implementation backlog](../planning/remaining-implementation-backlog.md)
-- [Architecture](../analysis/architecture.md)
+- [Architecture: observability](../architecture/architecture.md#observability)
 - [ADR-0001: Use a LangGraph state machine](0001-use-langgraph-state-machine.md)
 - [ADR-0004: Use SQLite for local prototype](0004-use-sqlite-for-local-prototype.md)

@@ -511,6 +511,6 @@ Never descope payment idempotency, deterministic hard controls, audit evidence, 
 
 - [Business case analysis](../analysis/business-case-analysis.md)
 - [Proposed solution](../analysis/proposed-solution.md)
-- [Architecture](../analysis/architecture.md)
+- [Architecture](../architecture/architecture.md)
 - [Evaluation approach and needs](../analysis/evaluation-approach.md)
 - [Architecture decision records](../adr/0001-use-langgraph-state-machine.md)

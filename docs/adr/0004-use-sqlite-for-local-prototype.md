@@ -59,6 +59,6 @@ Restart tests must prove that checkpointed runs and review tasks resume correctl
 
 ## More Information
 
-- [Architecture: core relational model](../analysis/architecture.md#core-relational-model)
-- [Architecture: local prototype](../analysis/architecture.md#local-prototype)
+- [Architecture: data and persistence](../architecture/architecture.md#data-and-persistence)
+- [Architecture: deployment shape](../architecture/architecture.md#deployment-shape)
 - Production storage and availability objectives remain open decisions.

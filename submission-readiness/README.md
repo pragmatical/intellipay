@@ -214,7 +214,8 @@ Reassess this scorecard after each vertical-slice milestone. Rank the next work 
 These links are inputs to the assessment; the linked documents remain solution artifacts and must not contain readiness scoring commentary.
 
 - [Business case analysis](../docs/analysis/business-case-analysis.md)
-- [Proposed solution](../docs/analysis/proposed-solution.md)
-- [Architecture](../docs/analysis/architecture.md)
+- [Solution architecture](../docs/architecture/solution-architecture.md)
+- [Technical architecture](../docs/architecture/architecture.md)
+- [Original proposed solution](../docs/analysis/proposed-solution.md)
 - [Solution evaluation approach](../docs/analysis/evaluation-approach.md)
 - [Architecture decision records](../docs/adr/0001-use-langgraph-state-machine.md)

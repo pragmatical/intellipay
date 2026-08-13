@@ -282,7 +282,7 @@ The following require named owners before shadow-pilot exit:
 
 - [Business case analysis](business-case-analysis.md)
 - [Proposed solution](proposed-solution.md)
-- [Architecture](architecture.md)
+- [Architecture](../architecture/architecture.md)
 - [ADR-0002: Use deterministic-first invoice processing](../adr/0002-use-deterministic-first-processing.md)
 - [ADR-0003: Isolate Grok behind a reasoning provider](../adr/0003-isolate-grok-behind-reasoning-provider.md)
 - [ADR-0007: Isolate payment behind an idempotent port](../adr/0007-isolate-payment-behind-idempotent-port.md)

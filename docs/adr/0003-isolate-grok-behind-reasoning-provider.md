@@ -62,5 +62,5 @@ The same graph tests must pass with the deterministic fake and xAI adapter contr
 ## More Information
 
 - [Proposed solution: xAI Grok integration](../analysis/proposed-solution.md#xai-grok-integration)
-- [Architecture: determinism and LLM evaluation](../analysis/architecture.md#determinism-and-llm-evaluation)
+- [Architecture: reasoning architecture](../architecture/architecture.md#reasoning-architecture)
 - [ADR-0002: Use deterministic-first invoice processing](0002-use-deterministic-first-processing.md)

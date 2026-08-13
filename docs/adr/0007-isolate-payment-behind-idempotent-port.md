@@ -60,6 +60,6 @@ Contract and graph tests must prove that payment requires an authorized command,
 ## More Information
 
 - [Proposed solution: LangGraph workflow](../analysis/proposed-solution.md#langgraph-workflow)
-- [Architecture: payment trust boundary](../analysis/architecture.md#runtime-and-trust-boundaries)
+- [Architecture: security and trust boundaries](../architecture/architecture.md#security-and-trust-boundaries)
 - [Business case: risks and mitigations](../analysis/business-case-analysis.md#risks-and-mitigations)
 - [ADR-0001: Use a LangGraph state machine](0001-use-langgraph-state-machine.md)

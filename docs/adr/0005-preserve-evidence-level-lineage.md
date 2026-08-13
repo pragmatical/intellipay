@@ -62,5 +62,5 @@ For every evaluated invoice, the prototype must trace each accepted field to sou
 ## More Information
 
 - [Proposed solution: canonical invoice contract](../analysis/proposed-solution.md#canonical-invoice-contract)
-- [Architecture: canonical data layers](../analysis/architecture.md#canonical-data-layers)
-- [Architecture: replay and reprocessing](../analysis/architecture.md#replay-and-reprocessing)
+- [Solution architecture: information and evidence flow](../architecture/solution-architecture.md#information-and-evidence-flow)
+- [Architecture: data and persistence](../architecture/architecture.md#data-and-persistence)

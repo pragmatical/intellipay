@@ -59,5 +59,5 @@ Automated graph tests must prove that hard failures cannot reach payment, low-co
 ## More Information
 
 - [Proposed solution: LangGraph workflow](../analysis/proposed-solution.md#langgraph-workflow)
-- [Architecture: LangGraph execution](../analysis/architecture.md#langgraph-execution-architecture)
+- [Architecture: workflow architecture](../architecture/architecture.md#workflow-architecture)
 - [ADR-0007: Isolate payment behind an idempotent port](0007-isolate-payment-behind-idempotent-port.md)
