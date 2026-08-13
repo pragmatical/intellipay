@@ -14,10 +14,11 @@ The default demo uses deterministic local reasoning and mock payment. It execute
 | Mock payment and replay controls | Yes |
 | Per-invoice audit timeline | Yes |
 | Redacted JSONL event export | Yes |
-| Jaeger traces and Grafana metrics | No; these require an OTLP backend |
+| Mocked xAI Grok reasoning | Yes; deterministic local simulation |
 | Live xAI Grok reasoning | No; this requires network access and an API key |
+| Jaeger traces and Grafana metrics | No; these require an OTLP backend |
 
-> **Want LLM-based reasoning?** When network access is available, follow [Optionally Use the Real LLM](#optionally-use-the-real-llm) to configure `INTELLIPAY_REASONING_MODE` and `XAI_API_KEY` in the local `.env` file.
+> **Configure LLM-based reasoning:** When network access is available, copy `.env.example` to `.env`, set `INTELLIPAY_REASONING_MODE=live` and `XAI_API_KEY`, clear any shell override with `unset INTELLIPAY_REASONING_MODE`, then run `uv run intellipay-demo`. See [Optionally Use the Real LLM](#optionally-use-the-real-llm) for the complete steps and safety boundaries.
 
 The SQLite event stream is the authoritative financial audit record. OpenTelemetry traces and metrics are optional operational evidence and do not affect workflow behavior.
 
