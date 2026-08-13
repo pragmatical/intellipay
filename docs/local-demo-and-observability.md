@@ -101,9 +101,23 @@ Press `Ctrl+C` to stop the server. Run the command again to restore the same cle
 
 The demo prints every scenario's outcome, payment status, replay status, findings, repair count, and reasoning-call count. Its final control summary lists payment totals and allowed review actions.
 
+The final **Reasoning Cost Report** aggregates the same per-call usage stored in the reasoning traces. It reports input, cached-input, and output tokens; exact versus estimated calls; estimated API cost; and the pricing effective date and source. Local deterministic reasoning estimates token usage from the same prompts and structured request/response contracts as the live provider. Live xAI runs use token counts returned by the API.
+
+Pricing is not stored in `.env`. The version-controlled [model pricing catalog](../src/intellipay/model_pricing.json) contains the currency, token unit, effective date, source URL, long-context threshold, and input/cached-input/output rates. Update and review that file when provider pricing changes. Cost is an estimate based on the catalog, not an xAI invoice; unknown models retain usage but are reported as unpriced.
+
+Generate a machine-readable cost report across the complete supplied corpus:
+
+```bash
+uv run intellipay-evaluate --output .intellipay/evaluation-report.json
+```
+
+Open `.intellipay/evaluation-report.json` and inspect `reasoning_cost`. The section includes totals and a breakdown by reasoning operation.
+
 ### Review Timeline
 
 The review UI is the easiest visual view. Each case shows original evidence, normalized payment facts, findings, policy routing, and the ordered run timeline. This view reads the same durable SQLite state used by the workflow.
+
+Before starting the review UI, the demo writes `.intellipay/observability-report.md`. Open it in VS Code to see reasoning token usage, estimated API cost, per-operation cost breakdown, event counts, and the chronological redacted events captured during initial invoice processing. The report is a presentation snapshot; actions taken later in the review UI remain visible in the review timeline and can be captured with the event export command below.
 
 ### Redacted Event Stream
 
@@ -131,6 +145,8 @@ rg 'payment|review|reasoning' .intellipay/events.jsonl
 ```
 
 Each envelope includes a schema version, monotonic sequence, event ID, event type, occurrence time, trace and span correlation IDs when available, and redacted event data. Reviewer identities, rationales, and payment IDs are removed from this export.
+
+When OpenTelemetry is enabled, the same workload emits `intellipay.reasoning.tokens` and `intellipay.reasoning.estimated_cost` metrics. The report remains available without an OTLP backend or Docker.
 
 For incremental export, retain the last `sequence` value consumed and use it as the next cursor:
 

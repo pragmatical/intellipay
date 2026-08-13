@@ -106,10 +106,13 @@ def test_reasoning_spans_are_nested_and_redacted(tmp_path: Path) -> None:
     span_exporter = InMemorySpanExporter()
     tracer_provider = TracerProvider()
     tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+    metric_reader = InMemoryMetricReader()
+    meter_provider = MeterProvider(metric_readers=[metric_reader])
     telemetry = Telemetry(
         tracer_provider.get_tracer("intellipay-test"),
-        MeterProvider().get_meter("intellipay-test"),
+        meter_provider.get_meter("intellipay-test"),
         tracer_provider=tracer_provider,
+        meter_provider=meter_provider,
     )
 
     result = InvoiceWorkflow(
@@ -133,6 +136,18 @@ def test_reasoning_spans_are_nested_and_redacted(tmp_path: Path) -> None:
     assert "ACME" not in serialized_attributes
     assert "WidgetA" not in serialized_attributes
     assert "5,OOO" not in serialized_attributes
+    telemetry.force_flush()
+    metric_names = {
+        metric.name
+        for resource_metric in metric_reader.get_metrics_data().resource_metrics
+        for scope_metric in resource_metric.scope_metrics
+        for metric in scope_metric.metrics
+    }
+    assert {
+        "intellipay.reasoning.calls",
+        "intellipay.reasoning.tokens",
+        "intellipay.reasoning.estimated_cost",
+    } <= metric_names
 
 
 def test_provider_error_text_is_redacted_from_spans(tmp_path: Path) -> None:

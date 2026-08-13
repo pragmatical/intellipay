@@ -14,6 +14,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
 from intellipay.config import Settings
+from intellipay.model_pricing import estimate_cost_usd
 from intellipay.parsing import ParserRegistry
 from intellipay.reasoning import ReasoningProvider, create_reasoning_provider
 from intellipay.reasoning.models import (
@@ -24,6 +25,7 @@ from intellipay.reasoning.models import (
     ExtractionRepairRequest,
     ExtractionRequest,
     InvoiceCandidate,
+    TokenUsage,
 )
 from intellipay.telemetry import Telemetry, create_telemetry
 from intellipay.workflow.models import (
@@ -402,6 +404,8 @@ class InvoiceWorkflow:
             request=request,
             started=started,
             model=result.model,
+            provider=result.provider,
+            usage=result.usage,
         )
         self._store.record_event(
             state["run_id"],
@@ -558,6 +562,8 @@ class InvoiceWorkflow:
             request=request,
             started=started,
             model=result.model,
+            provider=result.provider,
+            usage=result.usage,
         )
         self._store.record_event(
             state["run_id"],
@@ -580,8 +586,10 @@ class InvoiceWorkflow:
             with self._reasoning_span(
                 state, "critique_extraction", attempt=state["repair_attempts"]
             ):
-                critique = self._provider.critique_extraction(request)
-                defects = [ExtractionDefect.model_validate(defect) for defect in critique.defects]
+                result = self._provider.critique_extraction(request)
+                defects = [
+                    ExtractionDefect.model_validate(defect) for defect in result.critique.defects
+                ]
         except Exception as error:
             trace = self._reasoning_trace(
                 operation="critique_extraction",
@@ -604,6 +612,9 @@ class InvoiceWorkflow:
             status="SUCCEEDED",
             request=request,
             started=started,
+            model=result.model,
+            provider=result.provider,
+            usage=result.usage,
         )
         self._store.record_event(
             state["run_id"],
@@ -657,6 +668,8 @@ class InvoiceWorkflow:
             request=request,
             started=started,
             model=result.model,
+            provider=result.provider,
+            usage=result.usage,
         )
         self._store.record_event(state["run_id"], "extraction_repaired", {"attempt": attempt})
         return {
@@ -715,20 +728,32 @@ class InvoiceWorkflow:
         request: object,
         started: float,
         model: str | None = None,
+        provider: str | None = None,
+        usage: TokenUsage | None = None,
         error: Exception | None = None,
     ) -> ReasoningTraceEntry:
         request_json = (
             request.model_dump_json() if hasattr(request, "model_dump_json") else repr(request)
         )
+        pricing_model = self._settings.xai_model if usage else None
         trace_entry = ReasoningTraceEntry(
             operation=operation,
             attempt=attempt,
             status=status,
-            provider=self._settings.reasoning_mode,
+            provider=provider or self._settings.reasoning_mode,
             model=model,
             prompt_version="reasoning-v1",
             latency_ms=max(0, round((perf_counter() - started) * 1000)),
             request_fingerprint=sha256(request_json.encode()).hexdigest(),
+            token_usage=usage.total_tokens if usage else None,
+            input_tokens=usage.input_tokens if usage else None,
+            cached_input_tokens=usage.cached_input_tokens if usage else None,
+            output_tokens=usage.output_tokens if usage else None,
+            token_usage_estimated=usage.estimated if usage else None,
+            pricing_model=pricing_model,
+            estimated_cost_usd=(
+                estimate_cost_usd(pricing_model, usage) if pricing_model and usage else None
+            ),
             error_type=type(error).__name__ if error else None,
         )
         self._telemetry.record_reasoning(
@@ -736,6 +761,15 @@ class InvoiceWorkflow:
             provider=self._settings.reasoning_mode,
             status=status,
             duration_ms=trace_entry.latency_ms,
+            input_tokens=trace_entry.input_tokens,
+            cached_input_tokens=trace_entry.cached_input_tokens,
+            output_tokens=trace_entry.output_tokens,
+            usage_estimated=trace_entry.token_usage_estimated,
+            estimated_cost_usd=(
+                float(trace_entry.estimated_cost_usd)
+                if trace_entry.estimated_cost_usd is not None
+                else None
+            ),
         )
         return trace_entry
 

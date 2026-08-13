@@ -22,3 +22,6 @@ def test_isolated_corpus_matches_draft_gold_labels() -> None:
     assert report.prohibited_payment_count == 0
     assert report.batch_error_count == 0
     assert report.route_distribution == {"APPROVE": 10, "ESCALATE": 6, "REJECT": 4}
+    assert report.reasoning_cost.calls > 0
+    assert report.reasoning_cost.estimated_usage_calls == report.reasoning_cost.calls
+    assert report.reasoning_cost.estimated_cost_usd > 0

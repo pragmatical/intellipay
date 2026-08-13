@@ -1,5 +1,6 @@
 import re
 from decimal import Decimal
+from math import ceil
 from typing import ClassVar
 
 from intellipay.config import ReasoningMode
@@ -10,12 +11,20 @@ from intellipay.reasoning.models import (
     DecisionCritiqueResult,
     ExtractionCritique,
     ExtractionCritiqueRequest,
+    ExtractionCritiqueResult,
     ExtractionDefect,
     ExtractionRepairRequest,
     ExtractionRequest,
     ExtractionResult,
     InvoiceCandidate,
     LineItem,
+    TokenUsage,
+)
+from intellipay.reasoning.prompts import (
+    CRITIQUE_SYSTEM_PROMPT,
+    EXTRACTION_CRITIQUE_PROMPT,
+    EXTRACTION_SYSTEM_PROMPT,
+    REPAIR_SYSTEM_PROMPT,
 )
 
 
@@ -63,14 +72,17 @@ class LocalReasoningProvider:
             payment_terms=fields["payment_terms"],
             line_items=line_items,
         )
-        return ExtractionResult(
+        result = ExtractionResult(
             mode=ReasoningMode.LOCAL,
             provider="simulated",
             model="deterministic-v1",
             candidate=candidate,
         )
+        return result.model_copy(
+            update={"usage": self._estimated_usage(EXTRACTION_SYSTEM_PROMPT, request, candidate)}
+        )
 
-    def critique_extraction(self, request: ExtractionCritiqueRequest) -> ExtractionCritique:
+    def critique_extraction(self, request: ExtractionCritiqueRequest) -> ExtractionCritiqueResult:
         defects = []
         if "SUBTOTAL_MISMATCH" in request.finding_codes:
             defects.append(
@@ -80,18 +92,25 @@ class LocalReasoningProvider:
                     message="Subtotal does not equal the sum of line items.",
                 )
             )
-        return ExtractionCritique(defects=defects)
+        critique = ExtractionCritique(defects=defects)
+        return ExtractionCritiqueResult(
+            mode=ReasoningMode.LOCAL,
+            provider="simulated",
+            model="deterministic-v1",
+            critique=critique,
+            usage=self._estimated_usage(EXTRACTION_CRITIQUE_PROMPT, request, critique),
+        )
 
     def repair_invoice(self, request: ExtractionRepairRequest) -> ExtractionResult:
         result = self.extract_invoice(request.extraction)
         subtotal_match = self._required_match(
             self._FIELD_PATTERNS["subtotal"], request.extraction.content
         )
+        candidate = result.candidate.model_copy(update={"subtotal": self._money(subtotal_match)})
         return result.model_copy(
             update={
-                "candidate": result.candidate.model_copy(
-                    update={"subtotal": self._money(subtotal_match)}
-                )
+                "candidate": candidate,
+                "usage": self._estimated_usage(REPAIR_SYSTEM_PROMPT, request, candidate),
             }
         )
 
@@ -101,11 +120,26 @@ class LocalReasoningProvider:
             if request.findings and request.proposed_outcome == "APPROVE"
             else []
         )
+        critique = DecisionCritique(accept_recommendation=not defects, defects=defects)
         return DecisionCritiqueResult(
             mode=ReasoningMode.LOCAL,
             provider="simulated",
             model="deterministic-v1",
-            critique=DecisionCritique(accept_recommendation=not defects, defects=defects),
+            critique=critique,
+            usage=self._estimated_usage(CRITIQUE_SYSTEM_PROMPT, request, critique),
+        )
+
+    @staticmethod
+    def _estimated_usage(system_prompt: str, request: object, response: object) -> TokenUsage:
+        def serialized(value: object) -> str:
+            return value.model_dump_json() if hasattr(value, "model_dump_json") else repr(value)
+
+        return TokenUsage(
+            input_tokens=max(
+                1, ceil((len(system_prompt.encode()) + len(serialized(request).encode())) / 4)
+            ),
+            output_tokens=max(1, ceil(len(serialized(response).encode()) / 4)),
+            estimated=True,
         )
 
     @staticmethod

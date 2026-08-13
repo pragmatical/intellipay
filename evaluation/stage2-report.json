@@ -17,6 +17,32 @@
     "REJECT": 4,
     "ESCALATE": 6
   },
+  "reasoning_cost": {
+    "currency": "USD",
+    "pricing_effective_date": "2026-08-13",
+    "pricing_source_url": "https://docs.x.ai/developers/models",
+    "calls": 6,
+    "metered_calls": 6,
+    "exact_usage_calls": 0,
+    "estimated_usage_calls": 6,
+    "unpriced_calls": 0,
+    "input_tokens": 466,
+    "cached_input_tokens": 0,
+    "output_tokens": 66,
+    "estimated_cost_usd": "0.001328000000",
+    "by_operation": [
+      {
+        "operation": "critique_decision",
+        "calls": 6,
+        "exact_usage_calls": 0,
+        "estimated_usage_calls": 6,
+        "input_tokens": 466,
+        "cached_input_tokens": 0,
+        "output_tokens": 66,
+        "estimated_cost_usd": "0.001328000000"
+      }
+    ]
+  },
   "cases": [
     {
       "case_id": "inv-1001-txt",

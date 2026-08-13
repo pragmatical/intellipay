@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -42,6 +43,12 @@ class ReasoningTraceEntry(BaseModel):
     latency_ms: int = Field(ge=0)
     request_fingerprint: str
     token_usage: int | None = Field(default=None, ge=0)
+    input_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    token_usage_estimated: bool | None = None
+    pricing_model: str | None = None
+    estimated_cost_usd: Decimal | None = Field(default=None, ge=0)
     error_type: str | None = None
 
 

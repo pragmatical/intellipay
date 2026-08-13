@@ -36,6 +36,19 @@ class InvoiceCandidate(BaseModel):
     line_items: list[LineItem]
 
 
+class TokenUsage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    input_tokens: int = Field(ge=0)
+    cached_input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(ge=0)
+    estimated: bool = False
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+
 class ExtractionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -50,6 +63,7 @@ class ExtractionResult(BaseModel):
     provider: str
     model: str
     candidate: InvoiceCandidate
+    usage: TokenUsage | None = None
 
 
 class ExtractionDefect(BaseModel):
@@ -71,6 +85,16 @@ class ExtractionCritique(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     defects: list[ExtractionDefect]
+
+
+class ExtractionCritiqueResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: ReasoningMode
+    provider: str
+    model: str
+    critique: ExtractionCritique
+    usage: TokenUsage | None = None
 
 
 class ExtractionRepairRequest(BaseModel):
@@ -104,3 +128,4 @@ class DecisionCritiqueResult(BaseModel):
     provider: str
     model: str
     critique: DecisionCritique
+    usage: TokenUsage | None = None

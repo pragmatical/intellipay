@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 from pydantic import BaseModel, ConfigDict, Field
 
 from intellipay.config import Settings
+from intellipay.telemetry import ReasoningCostReport, build_reasoning_cost_report
 from intellipay.workflow import InvoiceWorkflow
 from intellipay.workflow.models import Outcome, PaymentStatus
 
@@ -71,6 +72,7 @@ class CorpusReport(BaseModel):
     batch_error_count: int
     draft_label_count: int
     route_distribution: dict[str, int]
+    reasoning_cost: ReasoningCostReport
     cases: list[CaseReport]
 
 
@@ -81,6 +83,7 @@ def load_manifest(path: Path) -> EvaluationManifest:
 def run_corpus(manifest_path: Path) -> CorpusReport:
     manifest = load_manifest(manifest_path)
     reports: list[CaseReport] = []
+    results = []
     for case in manifest.cases:
         report = CaseReport(
             case_id=case.case_id,
@@ -101,6 +104,7 @@ def run_corpus(manifest_path: Path) -> CorpusReport:
             report.route_agreement = result.outcome is case.expected_outcome
             report.finding_agreement = report.actual_findings == report.expected_findings
             report.payment_agreement = report.actual_payment is case.payment_expected
+            results.append(result)
         except Exception as error:
             report.error = f"{type(error).__name__}: {error}"
         reports.append(report)
@@ -133,6 +137,7 @@ def run_corpus(manifest_path: Path) -> CorpusReport:
         batch_error_count=sum(report.error is not None for report in reports),
         draft_label_count=sum(report.label_status == "draft" for report in reports),
         route_distribution=route_distribution,
+        reasoning_cost=build_reasoning_cost_report(results),
         cases=reports,
     )
 

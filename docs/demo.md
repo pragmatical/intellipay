@@ -48,6 +48,8 @@ The terminal narrates each result and its business impact:
 
 The final control summary reports persisted payment count, open review tasks, finding codes, and the actions allowed for each review.
 
+The runner also prints a reasoning cost report derived from its per-call traces. Local mode projects token usage using the same prompts and structured contracts as live mode; live mode uses provider-reported token counts. Rates come from the version-controlled [`model_pricing.json`](../src/intellipay/model_pricing.json), not `.env`, and the output is an estimate rather than a provider invoice.
+
 ## Approval UI Walkthrough
 
 ### 1. Approve a Valid High-Value Invoice

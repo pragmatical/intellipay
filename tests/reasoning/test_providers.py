@@ -51,6 +51,10 @@ def test_local_mode_is_default_and_extracts_fixture_deterministically() -> None:
     assert result.mode is ReasoningMode.LOCAL
     assert result.provider == "simulated"
     assert result.candidate == invoice_candidate()
+    assert result.usage is not None
+    assert result.usage.estimated is True
+    assert result.usage.input_tokens > 0
+    assert result.usage.output_tokens > 0
 
 
 def test_live_mode_fails_closed_without_xai_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,6 +72,11 @@ def test_live_mode_uses_xai_structured_output_contract() -> None:
         return_value=SimpleNamespace(
             model="grok-test",
             choices=[SimpleNamespace(message=SimpleNamespace(parsed=candidate))],
+            usage=SimpleNamespace(
+                prompt_tokens=120,
+                completion_tokens=30,
+                prompt_tokens_details=SimpleNamespace(cached_tokens=20),
+            ),
         )
     )
     client = SimpleNamespace(
@@ -86,6 +95,13 @@ def test_live_mode_uses_xai_structured_output_contract() -> None:
     assert result.provider == "xai"
     assert result.model == "grok-test"
     assert result.candidate == candidate
+    assert result.usage is not None
+    assert result.usage.model_dump() == {
+        "input_tokens": 120,
+        "cached_input_tokens": 20,
+        "output_tokens": 30,
+        "estimated": False,
+    }
     parse.assert_called_once()
     call = parse.call_args.kwargs
     assert call["model"] == "grok-test"

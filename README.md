@@ -4,6 +4,8 @@ IntelliPay is a controlled, agent-assisted invoice-processing system for account
 
 The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
 
+See the [business case analysis](docs/analysis/business-case-analysis.md) for how IntelliPay's ingestion, validation, review, reasoning, payment, and audit capabilities address Acme's processing errors, five-day cycle time, avoidable cost, payment leakage, and control exposure.
+
 > **Simulated human-in-the-loop review:** Two review protocols were rehearsed with LLM-simulated roles: a [finance and domain label review](docs/runbooks/finance-domain-label-approval-simulation.md) covering expected routes, findings, and payment outcomes across the corpus, and an [accounts-payable usability review](docs/runbooks/accounts-payable-usability-simulation.md) covering exception comprehension, evidence, and constrained actions through synthetic AP personas. These tabletop exercises validate the review process and expose gaps before using staff time; they do not claim delegated finance approval or representative human-participant results.
 
 ## See Outcomes in Action
@@ -11,10 +13,6 @@ The solution is being built for Acme Corp, where manual invoice handling current
 The default demonstration runs locally with deterministic reasoning and mock payment.
 
 Follow the [local demo and observability guide](docs/local-demo-and-observability.md) for clean-machine preparation, disconnected operation without Docker, the approval walkthrough, durable JSONL event inspection, troubleshooting, and optional `.env` configuration for the real xAI model.
-
-## Connect the Application to Business Value
-
-See the [business case analysis](docs/analysis/business-case-analysis.md) for how IntelliPay's ingestion, validation, review, reasoning, payment, and audit capabilities address Acme's processing errors, five-day cycle time, avoidable cost, payment leakage, and control exposure.
 
 ## Run the Reasoning Slice
 
@@ -44,7 +42,7 @@ Open `http://localhost:8000/reviews` and authenticate with those credentials. Th
 
 ## View Observability Locally
 
-Without Docker or network access, use the review timeline and redacted durable event export described in the [local demo and observability guide](docs/local-demo-and-observability.md).
+Without Docker or network access, use the review timeline, generated reasoning cost report, and redacted durable event export described in the [local demo and observability guide](docs/local-demo-and-observability.md). Model rates are versioned in the checked-in [pricing catalog](src/intellipay/model_pricing.json), while local reasoning simulates token usage and live xAI runs use provider-reported usage.
 
 Start the local OpenTelemetry Collector, Jaeger, Prometheus, and Grafana stack, then opt the application into OTLP export:
 

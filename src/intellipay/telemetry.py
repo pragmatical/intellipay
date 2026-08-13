@@ -14,6 +14,12 @@ from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 from opentelemetry.trace import Span, Status, StatusCode, Tracer
 
 from intellipay.config import Settings
+from intellipay.model_pricing import (
+    ReasoningCostReport as ReasoningCostReport,
+)
+from intellipay.model_pricing import (
+    build_reasoning_cost_report as build_reasoning_cost_report,
+)
 
 AttributeValue = str | bool | int | float
 
@@ -36,6 +42,10 @@ class Telemetry:
         self._reasoning_calls = meter.create_counter("intellipay.reasoning.calls")
         self._reasoning_duration = meter.create_histogram(
             "intellipay.reasoning.duration", unit="ms"
+        )
+        self._reasoning_tokens = meter.create_counter("intellipay.reasoning.tokens", unit="{token}")
+        self._reasoning_cost = meter.create_counter(
+            "intellipay.reasoning.estimated_cost", unit="USD"
         )
         self._payments = meter.create_counter("intellipay.payments")
 
@@ -85,6 +95,11 @@ class Telemetry:
         provider: str,
         status: str,
         duration_ms: float,
+        input_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        usage_estimated: bool | None = None,
+        estimated_cost_usd: float | None = None,
     ) -> None:
         attributes = {
             "gen_ai.operation.name": operation,
@@ -93,6 +108,22 @@ class Telemetry:
         }
         self._reasoning_calls.add(1, attributes)
         self._reasoning_duration.record(duration_ms, attributes)
+        usage_attributes = {
+            **attributes,
+            "intellipay.reasoning.usage_estimated": usage_estimated or False,
+        }
+        for token_type, tokens in (
+            ("input", input_tokens),
+            ("cached_input", cached_input_tokens),
+            ("output", output_tokens),
+        ):
+            if tokens is not None:
+                self._reasoning_tokens.add(
+                    tokens,
+                    {**usage_attributes, "intellipay.reasoning.token_type": token_type},
+                )
+        if estimated_cost_usd is not None:
+            self._reasoning_cost.add(estimated_cost_usd, usage_attributes)
 
     def record_payment(self, *, status: str, replayed: bool) -> None:
         self._payments.add(
