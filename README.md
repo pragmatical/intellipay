@@ -10,9 +10,11 @@ See the [business case analysis](docs/analysis/business-case-analysis.md) for ho
 
 ## See Outcomes in Action
 
-The default demonstration runs locally with deterministic reasoning and mock payment.
+The default demonstration runs locally with deterministic reasoning and mock payment. After processing the eight scenarios, it generates `.intellipay/observability-report.md` from the durable SQLite event stream and reasoning traces. The report summarizes captured events, redaction, token usage, and estimated model cost before the same persisted state is explored in the approval UI.
 
 Follow the [local demo and observability guide](docs/local-demo-and-observability.md) for clean-machine preparation, disconnected operation without Docker, the approval walkthrough, durable JSONL event inspection, troubleshooting, and optional `.env` configuration for the real xAI model.
+
+The numbered [architecture decision records](docs/adr/) preserve the significant technical decisions made while building IntelliPay, including their context, trade-offs, consequences, and rejected alternatives.
 
 ## Run the Reasoning Slice
 

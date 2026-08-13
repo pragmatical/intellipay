@@ -39,7 +39,17 @@ uv sync --locked --all-groups
 
 After `uv sync` succeeds, the demo can run disconnected from the network. For a fully air-gapped machine, transfer the repository together with a populated `uv` cache or prebuilt environment; a fresh dependency installation cannot download packages without access to a package source.
 
-## Run the Offline Demo
+## Run the Demonstration
+
+Use this sequence during the presentation:
+
+1. Run the processor and wait for all eight invoice scenarios to complete.
+2. Validate the generated Markdown observability report.
+3. Use the approval UI against the same persisted workflow state.
+
+Keep the demo command running throughout all three steps. After processing, it becomes the web server for the approval UI.
+
+### 1. Run the Processor
 
 The built-in reasoning mode is `local`. If a `.env` file already exists from live-model testing, remove it or ensure it contains:
 
@@ -53,17 +63,41 @@ An exported shell value takes precedence over `.env`. Clear an old override when
 unset INTELLIPAY_REASONING_MODE
 ```
 
-Start the presentation:
+Start the deterministic local presentation. This command overrides any live reasoning mode in `.env` for this run:
 
 ```bash
-uv run intellipay-demo
+INTELLIPAY_REASONING_MODE=local uv run intellipay-demo
 ```
 
-Each run recreates only `.intellipay/demo.db`, executes eight narrated scenarios, and starts the review UI. Wait for:
+Each run recreates only `.intellipay/demo.db`, executes eight narrated scenarios, writes the observability report, and starts the review UI. Follow the `[1/8]` through `[8/8]` progress messages and confirm the terminal prints:
 
 ```text
+OBSERVABILITY REPORT
+  Captured events: ...
+  Markdown: .intellipay/observability-report.md
+
 Uvicorn running on http://127.0.0.1:8001
 ```
+
+The command has not hung when Uvicorn starts. Leave it running while you inspect the report and use the UI. Open a second terminal only for optional event-export commands.
+
+### 2. Validate the Observability Report
+
+Open [`.intellipay/observability-report.md`](../.intellipay/observability-report.md) in VS Code. It is generated from the same SQLite database that the processor and approval UI use.
+
+Confirm the report contains:
+
+1. **Summary:** a nonzero total event count and a monotonic sequence range.
+2. **Reasoning Usage and Estimated Cost:** usage basis, reasoning calls, input/cached-input/output tokens, total estimated API cost, pricing effective date and source, and per-operation costs.
+3. **Event Types:** counts for the durable workflow events captured during the eight scenarios.
+4. **Captured Events:** chronological event envelopes with sequence, occurrence time, event type, and redacted data.
+5. **Redaction:** sensitive payment IDs, reviewer identities, and rationales appear as `[REDACTED]` when those fields are present.
+
+Local-mode token usage is estimated from the production prompts and structured contracts. Live xAI runs use provider-reported token counts. Cost is a catalog-based estimate, not a provider invoice.
+
+The Markdown file is a snapshot of initial processing. Approval actions performed next are visible immediately in each review's timeline; use the incremental export described under [Redacted Event Stream](#redacted-event-stream) when a post-approval file artifact is needed.
+
+### 3. Use the Approval UI
 
 Open [http://127.0.0.1:8001/reviews](http://127.0.0.1:8001/reviews) and sign in:
 
@@ -71,6 +105,17 @@ Open [http://127.0.0.1:8001/reviews](http://127.0.0.1:8001/reviews) and sign in:
 |---|---|
 | Username | `reviewer` |
 | Password | `intellipay-demo` |
+
+Walk through these controls in order:
+
+1. Open **INV-9001** and compare the source evidence, normalized facts, `HIGH_VALUE` finding, policy route, and timeline.
+2. Enter `Validated amount and inventory; approved for payment.` and select **APPROVE**. Confirm that the checkpoint resumes and one mock payment is recorded.
+3. Open **INV-1002**. Show that insufficient stock disables **APPROVE** while reject and correction remain available.
+4. Open **INV-1004**. Show that `INVOICE_VERSION_CONFLICT` prevents a second payment for the revised source.
+
+Press `Ctrl+C` in the original terminal when the presentation is complete. Run the command again to recreate a clean, predictable demo state.
+
+### Alternate Runs
 
 Use another port if 8001 is occupied:
 
@@ -83,17 +128,6 @@ Run only the terminal scenarios when a browser is not needed:
 ```bash
 uv run intellipay-demo --no-server
 ```
-
-## Demonstrate the Controls
-
-The terminal shows routine automation, replay protection, bounded reasoning, review routing, hard rejection, and invoice-revision safety. Use the review UI for these three cases:
-
-1. Open **INV-9001** and compare the source evidence, normalized facts, `HIGH_VALUE` finding, policy route, and timeline.
-2. Enter `Validated amount and inventory; approved for payment.` and select **APPROVE**. Confirm that the checkpoint resumes and one mock payment is recorded.
-3. Open **INV-1002**. Show that insufficient stock disables **APPROVE** while reject and correction remain available.
-4. Open **INV-1004**. Show that `INVOICE_VERSION_CONFLICT` prevents a second payment for the revised source.
-
-Press `Ctrl+C` to stop the server. Run the command again to restore the same clean starting state.
 
 ## View Observability Without Docker
 
@@ -115,9 +149,7 @@ Open `.intellipay/evaluation-report.json` and inspect `reasoning_cost`. The sect
 
 ### Review Timeline
 
-The review UI is the easiest visual view. Each case shows original evidence, normalized payment facts, findings, policy routing, and the ordered run timeline. This view reads the same durable SQLite state used by the workflow.
-
-Before starting the review UI, the demo writes `.intellipay/observability-report.md`. Open it in VS Code to see reasoning token usage, estimated API cost, per-operation cost breakdown, event counts, and the chronological redacted events captured during initial invoice processing. The report is a presentation snapshot; actions taken later in the review UI remain visible in the review timeline and can be captured with the event export command below.
+Each approval case shows original evidence, normalized payment facts, findings, policy routing, and the ordered run timeline. This is the easiest visual view for events created after the initial Markdown report, and it reads the same durable SQLite state used by the workflow.
 
 ### Redacted Event Stream
 

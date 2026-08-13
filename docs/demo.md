@@ -2,16 +2,22 @@
 
 The executable presentation runs the real invoice workflow in deterministic local mode, prints a business-focused narrative, prepares review cases, and starts the existing approval interface against the same isolated database.
 
-## Start the Presentation
+## Presentation Sequence
 
 Install the locked environment, then run one command from the repository root:
 
 ```bash
-uv sync --all-groups
-uv run intellipay-demo
+uv sync --locked --all-groups
+INTELLIPAY_REASONING_MODE=local uv run intellipay-demo
 ```
 
-The runner resets only `.intellipay/demo.db`, creates derived demo inputs under `.intellipay/demo-inputs/`, executes the workflow, and starts the review UI at `http://127.0.0.1:8001/reviews`.
+Keep this command running and present the demonstration in this order:
+
+1. **Processor:** wait for all eight narrated scenarios to complete.
+2. **Observability:** open [`.intellipay/observability-report.md`](../.intellipay/observability-report.md) and validate its event summary, reasoning token usage, estimated cost, per-operation breakdown, event-type counts, chronological events, and redaction.
+3. **Approval UI:** open `http://127.0.0.1:8001/reviews` and complete the walkthrough below against the same persisted state.
+
+The runner resets only `.intellipay/demo.db`, creates derived demo inputs under `.intellipay/demo-inputs/`, executes the workflow, writes the Markdown report, and then serves the review UI. `Uvicorn running on http://127.0.0.1:8001` means processing is complete and the command is correctly waiting for UI requests.
 
 Use these local demonstration credentials:
 
@@ -19,6 +25,8 @@ Use these local demonstration credentials:
 - **Password:** `intellipay-demo`
 
 Press `Ctrl+C` when the presentation is complete. Run the same command again to recreate a clean, predictable demo state.
+
+For clean-machine preparation, expected terminal checkpoints, report-validation details, event export, and troubleshooting, use the [local demo and observability guide](local-demo-and-observability.md).
 
 ### Use the Actual xAI Model
 
