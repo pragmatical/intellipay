@@ -115,10 +115,6 @@ This table assesses the executable evidence currently present in the repository.
 | Above/Beyond | Demonstrated | All five differentiators are executable and tested | None |
 | UI/UX | Demonstrated | All five are present in the live responsive review workflow | None |
 
-## Presentation Rehearsal
-
-Run `INTELLIPAY_REASONING_MODE=local uv run intellipay-demo` and follow the [local demo and observability guide](../docs/local-demo-and-observability.md). Present the processor results, validate `.intellipay/observability-report.md`, approve INV-9001, show the disabled approval for INV-1002, and inspect the INV-1004 revision conflict.
-
 ## Current Executable Evidence
 
 - `uv run pytest -q` passes 60 offline tests, skips one opt-in live xAI test, and reports one external Starlette deprecation warning; `uv run ruff check .`, `uv run ruff format --check src tests`, and `git diff --check` pass.
