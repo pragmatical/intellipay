@@ -1,12 +1,8 @@
 # IntelliPay
 
-IntelliPay is a controlled, agent-assisted invoice-processing system for accounts payable. It turns heterogeneous invoice documents into evidence-backed decisions, routes uncertainty to people, and permits payment only after deterministic financial and policy gates pass.
+Acme Corp's current manual invoice process has a 30% error rate, a five-day cycle, and $2 million in annual avoidable cost. IntelliPay targets an error rate below 5% and routine processing below one business day while keeping financial controls and payment authority deterministic; savings will be validated through a pilot.
 
-The solution is being built for Acme Corp, where manual invoice handling currently contributes to a 30% error rate, a five-day processing cycle, and an estimated $2 million in annual avoidable cost. IntelliPay targets routine automation without giving an LLM authority over financial controls or cash movement.
-
-See the [business case analysis](docs/analysis/business-case-analysis.md) for how IntelliPay's ingestion, validation, review, reasoning, payment, and audit capabilities address Acme's processing errors, five-day cycle time, avoidable cost, payment leakage, and control exposure.
-
-> **Simulated human-in-the-loop review:** Two review protocols were rehearsed with LLM-simulated roles: a [finance and domain label review](docs/runbooks/finance-domain-label-approval-simulation.md) covering expected routes, findings, and payment outcomes across the corpus, and an [accounts-payable usability review](docs/runbooks/accounts-payable-usability-simulation.md) covering exception comprehension, evidence, and constrained actions through synthetic AP personas. These tabletop exercises validate the review process and expose gaps before using staff time; they do not claim delegated finance approval or representative human-participant results.
+See the [business case analysis](docs/analysis/business-case-analysis.md) for the capability-to-value mapping.
 
 ## See Outcomes in Action
 
@@ -14,7 +10,13 @@ The default demonstration runs locally with deterministic reasoning and mock pay
 
 Follow the [local demo and observability guide](docs/local-demo-and-observability.md) for clean-machine preparation, disconnected operation without Docker, the approval walkthrough, durable JSONL event inspection, troubleshooting, and optional `.env` configuration for the real xAI model.
 
+## Implementation Approach
+
+For the implemented current state, see the [solution architecture](docs/architecture/solution-architecture.md) for actors, capabilities, outcomes, and integration boundaries, and the [technical architecture](docs/architecture/architecture.md) for the LangGraph workflow, controls, persistence, reasoning providers, security, and observability.
+
 The numbered [architecture decision records](docs/adr/) preserve the significant technical decisions made while building IntelliPay, including their context, trade-offs, consequences, and rejected alternatives.
+
+> **Simulated human-in-the-loop review:** Two review protocols were rehearsed with LLM-simulated roles: a [finance and domain label review](docs/runbooks/finance-domain-label-approval-simulation.md) covering expected routes, findings, and payment outcomes across the corpus, and an [accounts-payable usability review](docs/runbooks/accounts-payable-usability-simulation.md) covering exception comprehension, evidence, and constrained actions through synthetic AP personas. These tabletop exercises validate the review process and expose gaps before using staff time; they do not claim delegated finance approval or representative human-participant results.
 
 ## Run the Reasoning Slice
 
@@ -203,7 +205,8 @@ See the [solution evaluation approach](docs/analysis/evaluation-approach.md) for
 |---|---|
 | [`context/`](context/) | Supplied case background, requirements, and reference snippets |
 | [`data/invoices/`](data/invoices/) | Heterogeneous invoice fixtures and edge cases |
-| [`docs/analysis/`](docs/analysis/) | Business case, proposed solution, architecture, and evaluation approach |
+| [`docs/analysis/`](docs/analysis/) | Business case, original proposed solution, and evaluation approach |
+| [`docs/architecture/`](docs/architecture/) | Current solution and technical architecture |
 | [`docs/adr/`](docs/adr/) | Architecture decision records and trade-offs |
 | [`docs/planning/`](docs/planning/) | Phased implementation plan and functional MVP exit gates |
 | [`src/intellipay/`](src/intellipay/) | Runnable application package and reasoning adapters |
@@ -211,7 +214,7 @@ See the [solution evaluation approach](docs/analysis/evaluation-approach.md) for
 | [`.github/skills/`](.github/skills/) | Repository-specific Copilot workflows |
 | [`.devcontainer/`](.devcontainer/) | Reproducible local development environment |
 
-Workflow modules, migrations, evaluation assets, and the review interface will be added as implementation progresses.
+The implemented workflow modules, migrations, evaluation assets, and review interface are under `src/`, `evaluation/`, and `tests/`.
 
 ## Implementation Sequence
 

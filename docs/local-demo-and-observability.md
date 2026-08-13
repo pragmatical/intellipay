@@ -70,6 +70,8 @@ Start the deterministic local presentation. This command overrides any live reas
 INTELLIPAY_REASONING_MODE=local uv run intellipay-demo
 ```
 
+> **Generated report:** After all eight scenarios finish, open [`.intellipay/observability-report.md`](../.intellipay/observability-report.md) from the repository root. The file is recreated on every demo run before the approval UI starts.
+
 Each run recreates only `.intellipay/demo.db`, executes eight narrated scenarios, writes the observability report, and starts the review UI. Follow the `[1/8]` through `[8/8]` progress messages and confirm the terminal prints:
 
 ```text
