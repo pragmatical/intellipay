@@ -83,13 +83,13 @@ The following feature lists are the complete repository interpretation of the se
 - Responsive desktop and mobile layout
 - Accessible, understandable states
 
-Assessment date: 2026-08-12
+Assessment date: 2026-08-13
 
 ## Executive Assessment
 
-IntelliPay demonstrates every approved feature across all seven criteria. The complete offline suite passes 57 tests, and a fresh 20-case corpus run shows full route and finding agreement, full hard-control recall, zero prohibited payments, and zero batch errors.
+IntelliPay demonstrates every approved feature across all seven criteria. The complete offline suite passes 60 tests with one live xAI test skipped, and a fresh 20-case isolated corpus run shows full route and finding agreement, full hard-control recall, zero prohibited payments, and zero batch errors. Ordered workflow tests and the executable demo separately prove replay and revision-conflict behavior against shared state.
 
-Presentation is Demonstrated by the `intellipay-demo` runner and its walkthrough: one command narrates business impact while executing routine payment, replay protection, bounded correction, approvable and blocked human review, hard rejection, and revision safety, then serves the approval UI against the same state. Release tags, recordings, screenshot packs, clean-environment transcripts, external approvals, participant studies, and dedicated performance or security reports may strengthen evidence, but they are not rubric requirements.
+Presentation is Demonstrated by the `intellipay-demo` runner and its walkthrough: one command narrates business impact while executing routine payment, replay protection, bounded correction, approvable and blocked human review, hard rejection, and revision safety. It then generates a redacted Markdown observability and reasoning-cost report before serving the approval UI against the same state. Current solution and technical architecture documents explain the implemented behavior, while nine ADRs preserve the decision history.
 
 ## Scorecards
 
@@ -108,27 +108,30 @@ This table assesses the executable evidence currently present in the repository.
 | Criterion | Status | Approved features evidenced | Remaining rubric gap |
 |---|---|---|---|
 | Functionality | Demonstrated | All five execute across CLI, LangGraph, review, and payment flows | None |
-| Code Quality | Demonstrated | All five are supported by typed boundaries, 57 tests, safe fallback, OTel, and migrated SQLite storage | None |
+| Code Quality | Demonstrated | All five are supported by typed boundaries, 60 passing offline tests, safe fallback, OTel, and migrated SQLite storage | None |
 | Agentic Sophistication | Demonstrated | All five execute through provider-backed, structured, bounded, policy-safe graph operations | None |
 | Shipping Mindset | Demonstrated | All five are visible in the local-first MVP, pragmatic stack, explicit deferrals, and documented limitations | None |
-| Presentation | Demonstrated | All five are executable through the narrated runner, measured results, architecture references, and approval walkthrough | None |
+| Presentation | Demonstrated | All five are reproducible through the narrated runner, generated observability/cost report, current-state diagrams, ADRs, and approval walkthrough | None |
 | Above/Beyond | Demonstrated | All five differentiators are executable and tested | None |
 | UI/UX | Demonstrated | All five are present in the live responsive review workflow | None |
 
 ## Presentation Rehearsal
 
-Run `uv run intellipay-demo` and follow [the executable presentation walkthrough](../docs/demo.md). Rehearse the terminal narrative, approve INV-9001, show the disabled approval for INV-1002, and inspect the INV-1004 revision conflict without changing the scripted sequence.
+Run `INTELLIPAY_REASONING_MODE=local uv run intellipay-demo` and follow the [local demo and observability guide](../docs/local-demo-and-observability.md). Present the processor results, validate `.intellipay/observability-report.md`, approve INV-9001, show the disabled approval for INV-1002, and inspect the INV-1004 revision conflict.
 
 ## Current Executable Evidence
 
-- `uv run pytest -q` passes 57 tests; `uv run ruff check .`, `uv run ruff format --check src tests`, and `git diff --check` pass.
-- `uv run intellipay-evaluate --output evaluation/stage2-report.json` evaluates 20/20 cases with 100% route/finding agreement, 100% hard-control recall, zero prohibited payments, and zero batch errors.
+- `uv run pytest -q` passes 60 offline tests, skips one opt-in live xAI test, and reports one external Starlette deprecation warning; `uv run ruff check .`, `uv run ruff format --check src tests`, and `git diff --check` pass.
+- `uv run intellipay-evaluate --output /tmp/intellipay-readiness-evaluation.json` evaluates 20/20 isolated cases with 100% route/finding agreement, 100% hard-control recall, zero prohibited payments, and zero batch errors. It records six estimated local reasoning calls, 466 input tokens, 66 output tokens, and an estimated cost of `$0.001328`.
+- Ordered workflow tests and the eight-scenario demo prove stateful duplicate-payment and revision-conflict controls that isolated corpus cases cannot exercise.
 - `uv run intellipay <invoice-path>` demonstrates routine, rejected, and escalated CLI outcomes.
 - `uv run intellipay-review --host 0.0.0.0 --port 8000` serves the authenticated review workflow.
-- Desktop and mobile browser checks at 1440×900 and 390×844 verify the INV-1002 evidence, findings, timeline, constrained actions, disabled approval explanation, and absence of horizontal overflow.
+- A fresh 2026-08-13 browser check at 1440×900 and 390×844 verified the INV-1002 evidence, normalized facts, findings, timeline, constrained actions, disabled approval explanation, and absence of horizontal overflow; screenshot artifacts are not checked into the repository.
 - `docker compose -f compose.observability.yaml up -d` runs the Collector, Jaeger, Prometheus, and Grafana; telemetry tests prove root/node/reasoning correlation, redaction, and exporter-failure isolation.
 - `uv run intellipay-export-events --after-sequence 0` emits a versioned, cursor-ordered, redacted JSONL analytics stream.
-- `uv run intellipay-demo` executes the narrated pipeline, seeds the review queue, and serves the UI; a browser approval of INV-9001 resumed payment successfully while INV-1002 retained its disabled approval control.
+- `INTELLIPAY_REASONING_MODE=local uv run intellipay-demo --no-server` completes all eight scenarios with three persisted payments and three open reviews, then writes `.intellipay/observability-report.md`. The fresh report contains 45 redacted durable events and five estimated local reasoning calls totaling `$0.002778` under the versioned pricing catalog.
+- `uv run intellipay-demo` serves the same state in the review UI; a browser approval of INV-9001 resumes payment while INV-1002 retains its disabled approval control.
+- `docs/architecture/solution-architecture.md` and `docs/architecture/architecture.md` document the implemented business and technical views with current-state Mermaid diagrams; nine ADRs record the decisions and trade-offs.
 - `docs/planning/stage-2-verification.md`, `stage-3-verification.md`, and `stage-4-verification.md` record repeatable focused checks.
 - `docs/runbooks/finance-domain-label-approval-simulation.md` and `accounts-payable-usability-simulation.md` record completed simulations and their limitations.
 
@@ -174,22 +177,6 @@ This section records how Shipping Mindset was implemented. It is not a second ru
 - Model training, fine-tuning, or automatic learning from reviewer corrections
 - Custom analytics dashboards beyond the provisioned local trace and metric data sources
 
-## Presentation Feature Plan
-
-This is one candidate way to demonstrate the approved end-to-end demo narrative feature. Its individual cases and artifacts are not separate rubric requirements.
-
-The presentation should tell one end-to-end story in ten minutes or less.
-
-1. **Baseline:** State the 30% error rate, five-day cycle, and $2M annual loss.
-2. **Routine automation:** Process INV-1001 through deterministic extraction, validation, approval, and one mock payment.
-3. **Agentic correction:** Process an OCR-damaged or ambiguous invoice such as INV-1012. Show the model candidate, critic defect codes, bounded retry, and accepted or escalated result.
-4. **Controlled exception:** Process INV-1002 or INV-1003. Show inventory/high-value findings and prove that model reasoning cannot bypass review or rejection.
-5. **Financial safety:** Replay INV-1001 and show that the payment idempotency key prevents a second payment.
-6. **Reviewer experience:** Open the review console, inspect source evidence and rules fired, and record a human action.
-7. **Measured result:** Show corpus pass count, hard-control recall, extraction accuracy, route distribution, latency, model calls, and duplicate payments prevented.
-
-Keep INV-1004/R1 as the Above/Beyond proof for revision lineage and INV-1009 as the simplest hard-failure proof. Preserve INV-1014 as evidence that unsupported business policy escalates instead of being invented.
-
 ## Optional Supporting Evidence
 
 These artifacts can make the assessment easier to verify or the presentation easier to deliver. They are not criteria, and their absence must not lower a status when the approved features are already demonstrated.
@@ -204,6 +191,14 @@ These artifacts can make the assessment easier to verify or the presentation eas
 - Screenshots of the review list, invoice detail, evidence/findings, and completed review action
 - A concise architecture diagram and the nine ADR links
 - A limitations section that names deferred integrations and unresolved business policy
+
+## Residual Risks and Next Actions
+
+The approved rubric is demonstrated, but these evidence limitations should remain explicit:
+
+1. **Business outcomes are targets, not measured results.** The below-5% error target, below-one-business-day routine cycle target, and financial benefit require a representative shadow pilot with human-approved labels and operational baselines.
+2. **Human validation is simulated.** The finance/domain and usability exercises use LLM-simulated roles; representative AP users and accountable finance owners have not approved the labels, policy, or usability.
+3. **Presentation evidence is reproducible but not packaged.** The repository does not contain a release tag, recorded clean-machine demo, or desktop/mobile screenshot pack. Capturing these artifacts would reduce evaluator setup risk without changing the product scope.
 
 ## Reassessment Rule
 
