@@ -4,11 +4,14 @@ This guide runs the complete IntelliPay demonstration and inspects its durable o
 
 The default demo uses deterministic local reasoning and mock payment. It executes the real LangGraph workflow, persistence, review, policy, and payment-control paths without calling an external service.
 
+The interactive demo uses eight curated scenarios to show distinct outcomes and shared-state controls without repeating format variants. The corpus evaluation separately processes all 20 supplied files from clean state. Use both to demonstrate workflow depth and complete file coverage.
+
 ## What Works Offline
 
 | Capability | Available without Docker or network access |
 |---|---|
 | Eight-scenario executable demonstration | Yes |
+| Isolated evaluation of all 20 supplied files | Yes |
 | LangGraph workflow and SQLite checkpoints | Yes |
 | Human-review web interface | Yes |
 | Mock payment and replay controls | Yes |
@@ -39,6 +42,24 @@ uv sync --locked --all-groups
 ```
 
 After `uv sync` succeeds, the demo can run disconnected from the network. For a fully air-gapped machine, transfer the repository together with a populated `uv` cache or prebuilt environment; a fresh dependency installation cannot download packages without access to a package source.
+
+## Evaluate All 20 Invoice Files
+
+Run the complete supplied corpus before or after the interactive demo:
+
+```bash
+INTELLIPAY_REASONING_MODE=local uv run intellipay-evaluate \
+  --output .intellipay/evaluation-report.json
+```
+
+Open [`.intellipay/evaluation-report.json`](../.intellipay/evaluation-report.json) and confirm:
+
+- `total_cases` and `passed_cases` are both `20`.
+- `failed_cases`, `prohibited_payment_count`, and `batch_error_count` are `0`.
+- `route_agreement_rate`, `finding_agreement_rate`, and `hard_control_recall_rate` are `1.0`.
+- `reasoning_cost` contains token totals, estimated cost, and the per-operation breakdown.
+
+Each corpus case runs against a fresh temporary database. This isolates parser, validation, route, and payment expectations for every file, including equivalent PDF/TXT and PDF/JSON variants. Stateful duplicate, replay, and revision-conflict behavior is exercised by the eight-scenario demo and dedicated workflow tests.
 
 ## Run the Demonstration
 
@@ -142,13 +163,7 @@ The final **Reasoning Cost Report** aggregates the same per-call usage stored in
 
 Pricing is not stored in `.env`. The version-controlled [model pricing catalog](../src/intellipay/model_pricing.json) contains the currency, token unit, effective date, source URL, long-context threshold, and input/cached-input/output rates. Update and review that file when provider pricing changes. Cost is an estimate based on the catalog, not an xAI invoice; unknown models retain usage but are reported as unpriced.
 
-Generate a machine-readable cost report across the complete supplied corpus:
-
-```bash
-uv run intellipay-evaluate --output .intellipay/evaluation-report.json
-```
-
-Open `.intellipay/evaluation-report.json` and inspect `reasoning_cost`. The section includes totals and a breakdown by reasoning operation.
+The complete 20-file evaluation described under [Evaluate All 20 Invoice Files](#evaluate-all-20-invoice-files) writes a machine-readable report whose `reasoning_cost` section includes totals and a breakdown by reasoning operation.
 
 ### Review Timeline
 
