@@ -6,6 +6,84 @@ The solution is being built for Acme Corp, where manual invoice handling current
 
 > **Current status:** Stages 1 through 4 are implemented and engineering-verified. The complete supplied corpus is controlled deterministically, ambiguous extraction is bounded and safely traced, and escalations now pause for authenticated, policy-constrained human review before the same checkpoint resumes. The finance/domain label review and AP usability protocols have completed tabletop simulations; authorized label approval and observed participant timing, confidence, and comprehension baselines remain external follow-up work.
 
+## Demo Quickstart
+
+The demonstration runs completely locally with deterministic reasoning and mock payment. It requires no API key, `.env` file, cloud account, external database, or observability stack.
+
+### Fastest Path: VS Code Dev Container
+
+Prerequisites: [Git](https://git-scm.com/), [Docker](https://www.docker.com/products/docker-desktop/), VS Code, and the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
+
+```bash
+git clone https://github.com/pragmatical/intellipay.git
+cd intellipay
+code .
+```
+
+In VS Code, run **Dev Containers: Reopen in Container** from the Command Palette. When the container is ready, paste this into its terminal:
+
+```bash
+uv sync --locked --all-groups && uv run intellipay-demo
+```
+
+### Local Path
+
+Prerequisites: Git, Python 3.12 or later, and [`uv`](https://docs.astral.sh/uv/getting-started/installation/). Install `uv` first if the `uv --version` command is unavailable:
+
+```bash
+# macOS or Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then clone and run:
+
+```bash
+git clone https://github.com/pragmatical/intellipay.git
+cd intellipay
+uv sync --locked --all-groups
+uv run intellipay-demo
+```
+
+The first setup downloads the locked Python dependencies. The demo then resets only its isolated `.intellipay/demo.db`, executes eight narrated invoice scenarios through the real LangGraph workflow, and starts the approval UI. Wait for this terminal line before opening the browser:
+
+```text
+Uvicorn running on http://127.0.0.1:8001
+```
+
+Open [http://127.0.0.1:8001/reviews](http://127.0.0.1:8001/reviews) and sign in:
+
+| Field | Value |
+|---|---|
+| Username | `reviewer` |
+| Password | `intellipay-demo` |
+
+### Demonstration Flow
+
+The terminal has already demonstrated routine payment, replay protection, bounded agentic repair, hard rejection, and revision-safe payment. Use the seeded UI to complete the human portion:
+
+1. Open **INV-9001**. Compare the original evidence, normalized facts, `HIGH_VALUE` reason, policy rules, and timeline.
+2. Enter `Validated amount and inventory; approved for payment.` as the rationale and select **APPROVE**.
+3. Confirm the case becomes `COMPLETED` and the timeline adds review, payment authorization, and payment events.
+4. Open **INV-1002**. Show that insufficient inventory disables **APPROVE** and explains the non-overridable control.
+5. Open **INV-1004**. Show that the conflicting revision cannot create another payment.
+
+Press `Ctrl+C` in the terminal to stop the UI. Run `uv run intellipay-demo` again for a clean presentation; every run recreates the same isolated demo state. If port 8001 is already occupied, stop the previous demo process before rerunning.
+
+See the [full executable presentation walkthrough](docs/demo.md) for the business narrative, all eight scenarios, optional flags, and local observability view.
+
+### Optional: Run the Demo with Live Grok
+
+The demo uses local deterministic reasoning by default. To exercise the same eight scenarios with the actual xAI provider, copy `.env.example` to the ignored `.env` file and set:
+
+```dotenv
+INTELLIPAY_REASONING_MODE=live
+XAI_API_KEY=your-xai-api-key
+```
+
+Then run `uv run intellipay-demo` normally. There is no demo reasoning-mode flag; configuration precedence is an exported shell variable, `.env`, then the built-in `local` default. If the shell already exports a mode, run `unset INTELLIPAY_REASONING_MODE` first to allow `.env` to take effect.
+
+Live runs call a paid external API and can vary within the structured contract. For example, Grok may normalize the ambiguous demo amount on its first extraction, making the bounded repair retry unnecessary. Deterministic validation, review gates, payment authorization, and replay controls remain unchanged.
+
 ## Run the Reasoning Slice
 
 Install the locked environment and run the default offline simulation:
@@ -44,18 +122,6 @@ uv run intellipay-review --host 0.0.0.0 --port 8000
 ```
 
 Open `http://localhost:8000/reviews` and authenticate with those credentials. The interface shows the durable queue, original source, normalized payment facts, findings, rules, event timeline, constrained actions, and completed decision history. HTTP Basic authentication is a prototype boundary; production identity and delegated authority integration remain deferred.
-
-## Run the Executable Presentation
-
-Run the complete narrated workflow and approval experience with one command:
-
-```bash
-uv run intellipay-demo
-```
-
-The runner uses deterministic local reasoning, resets an isolated demo database, demonstrates routine payment, replay safety, bounded repair, approvable and blocked reviews, hard rejection, and revision safety, then starts the review UI at `http://127.0.0.1:8001/reviews`. Use username `reviewer` and password `intellipay-demo`.
-
-Follow the [executable presentation and approval walkthrough](docs/demo.md) for the narrative, UI actions, optional flags, and local observability view.
 
 ## View Observability Locally
 

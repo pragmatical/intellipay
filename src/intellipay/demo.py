@@ -4,7 +4,7 @@ from pathlib import Path
 
 import uvicorn
 
-from intellipay.config import ReasoningMode, Settings
+from intellipay.config import Settings
 from intellipay.review_app import create_app
 from intellipay.workflow import InvoiceWorkflow
 from intellipay.workflow.models import ReviewTask, WorkflowResult
@@ -142,27 +142,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the IntelliPay executable presentation and reviewer UI"
     )
-    parser.add_argument("--database-path", type=Path, default=DEFAULT_DATABASE)
     parser.add_argument("--invoice-root", type=Path, default=DEFAULT_INVOICE_ROOT)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8001)
     parser.add_argument("--reviewer-username", default="reviewer")
     parser.add_argument("--reviewer-password", default="intellipay-demo")
-    parser.add_argument("--no-reset", action="store_true")
     parser.add_argument("--no-server", action="store_true")
     return parser
 
 
-def main() -> None:
-    args = build_parser().parse_args()
-    if not args.no_reset:
-        reset_demo_state(args.database_path)
-    settings = Settings(
-        database_path=args.database_path,
-        reasoning_mode=ReasoningMode.LOCAL,
+def build_settings(args: argparse.Namespace) -> Settings:
+    return Settings(
+        database_path=DEFAULT_DATABASE,
         reviewer_username=args.reviewer_username,
         reviewer_password=args.reviewer_password,
     )
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    reset_demo_state(DEFAULT_DATABASE)
+    settings = build_settings(args)
     summary = run_demo(settings, args.invoice_root)
     print_presentation(summary)
     if args.no_server:

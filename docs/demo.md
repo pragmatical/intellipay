@@ -20,6 +20,19 @@ Use these local demonstration credentials:
 
 Press `Ctrl+C` when the presentation is complete. Run the same command again to recreate a clean, predictable demo state.
 
+### Use the Actual xAI Model
+
+Local deterministic reasoning is the default. To run the complete presentation through the live xAI adapter, create an ignored `.env` from `.env.example` and set:
+
+```dotenv
+INTELLIPAY_REASONING_MODE=live
+XAI_API_KEY=your-xai-api-key
+```
+
+Run `uv run intellipay-demo` with the same options shown above. The runner has no reasoning-mode option: an exported environment variable takes precedence over `.env`, and `.env` takes precedence over the built-in `local` default. Run `unset INTELLIPAY_REASONING_MODE` first if the current shell already exports a value that should not override `.env`.
+
+Live model output must satisfy the same typed schemas and deterministic controls, but the number of reasoning and repair calls may vary. A model that resolves INV-9002 during initial extraction will not consume the optional repair attempt. Live execution calls a paid external API.
+
 ## What the Runner Demonstrates
 
 The terminal narrates each result and its business impact:
@@ -68,19 +81,13 @@ Run the narrated workflow without starting a server:
 uv run intellipay-demo --no-server
 ```
 
-Use another local port or database:
+Use another local port:
 
 ```bash
-uv run intellipay-demo --port 8010 --database-path .intellipay/alternate-demo.db
+uv run intellipay-demo --port 8010
 ```
 
-Keep existing demo state instead of resetting it:
-
-```bash
-uv run intellipay-demo --no-reset
-```
-
-`--no-reset` is useful for continued exploration, but repeated processing can intentionally trigger duplicate or revision controls. Use the default reset behavior for a rehearsed presentation.
+The runner always resets the fixed `.intellipay/demo.db` before processing. Stop an existing demo server before starting another presentation session.
 
 ## Optional Local Observability
 

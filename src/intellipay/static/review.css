@@ -1,16 +1,17 @@
 :root {
-    --ink: #17221d;
-    --muted: #627067;
-    --paper: #f4f6f2;
+    --ink: #0b1f3b;
+    --muted: #58708a;
+    --paper: #f2f5f8;
     --surface: #ffffff;
-    --line: #d9dfd9;
-    --green: #176b4d;
-    --green-soft: #dcece4;
-    --amber: #9b5c08;
-    --amber-soft: #fff0ce;
-    --red: #a33a32;
-    --red-soft: #f9e2df;
-    --blue: #285d82;
+    --line: #c9d6e5;
+    --navy: #123a63;
+    --steel: #2f5d8c;
+    --pale: #c9d6e5;
+    --green: #157a55;
+    --green-soft: #ddf4ea;
+    --red: #b4233a;
+    --red-soft: #fde7eb;
+    --shadow: 0 18px 50px rgb(11 31 59 / 10%);
 }
 
 * {
@@ -21,13 +22,24 @@ body {
     margin: 0;
     overflow-x: clip;
     color: var(--ink);
-    background: var(--paper);
-    font-family: Aptos, Calibri, sans-serif;
+    background-color: var(--paper);
+    background-image:
+        linear-gradient(rgb(18 58 99 / 4%) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(18 58 99 / 4%) 1px, transparent 1px);
+    background-size: 32px 32px;
+    font-family: Aptos, "Avenir Next", sans-serif;
     letter-spacing: 0;
 }
 
 a {
     color: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--steel);
+    outline-offset: 3px;
 }
 
 h1,
@@ -38,14 +50,14 @@ p {
 
 h1,
 h2 {
-    font-family: Georgia, serif;
-    font-weight: 500;
+    font-family: "Aptos Display", "Avenir Next", sans-serif;
+    font-weight: 650;
     letter-spacing: 0;
 }
 
 h1 {
     margin-bottom: 8px;
-    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-size: clamp(2rem, 4vw, 3rem);
 }
 
 h2 {
@@ -67,8 +79,9 @@ pre,
     align-items: center;
     justify-content: space-between;
     color: white;
-    background: #18392d;
-    border-bottom: 3px solid #d9a441;
+    background: #0b1f3b;
+    border-bottom: 3px solid var(--steel);
+    box-shadow: 0 8px 28px rgb(11 31 59 / 24%);
 }
 
 .brand {
@@ -84,13 +97,14 @@ pre,
     height: 32px;
     display: grid;
     place-items: center;
-    color: #18392d;
-    background: #f2c763;
-    font-family: Georgia, serif;
+    color: #0b1f3b;
+    background: var(--pale);
+    border-radius: 6px;
+    font-family: "Aptos Display", "Avenir Next", sans-serif;
 }
 
 .environment {
-    color: #c8d7cf;
+    color: var(--pale);
     font-size: .82rem;
     text-transform: uppercase;
 }
@@ -113,7 +127,7 @@ pre,
 
 .eyebrow {
     margin-bottom: 8px;
-    color: var(--green);
+    color: var(--navy);
     font-size: .74rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -133,12 +147,16 @@ pre,
 
 .tabs a.active {
     color: var(--ink);
-    border-color: var(--green);
+    border-color: var(--steel);
     font-weight: 700;
 }
 
 .queue-table {
-    border-top: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
 }
 
 .queue-row {
@@ -149,12 +167,13 @@ pre,
     gap: 20px;
     align-items: center;
     background: var(--surface);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid #dde5ed;
     text-decoration: none;
 }
 
 a.queue-row:hover {
-    background: #edf3ee;
+    background: #e9eff5;
+    box-shadow: inset 4px 0 0 var(--steel);
 }
 
 .queue-header {
@@ -181,7 +200,7 @@ a.queue-row:hover {
 }
 
 .reason-list {
-    color: #3f4d45;
+    color: #405c76;
     font-size: .86rem;
 }
 
@@ -190,23 +209,24 @@ a.queue-row:hover {
     display: inline-block;
     width: fit-content;
     padding: 4px 7px;
+    border-radius: 4px;
     font-size: .68rem;
     letter-spacing: 0;
 }
 
 .priority.high {
-    color: var(--amber);
-    background: var(--amber-soft);
+    color: var(--navy);
+    background: #e2eaf2;
 }
 
 .priority.normal {
-    color: var(--blue);
-    background: #e2edf5;
+    color: var(--muted);
+    background: var(--paper);
 }
 
 .status.open {
-    color: var(--amber);
-    background: var(--amber-soft);
+    color: var(--navy);
+    background: var(--pale);
 }
 
 .status.completed {
@@ -215,7 +235,7 @@ a.queue-row:hover {
 }
 
 .row-arrow {
-    color: var(--green);
+    color: var(--steel);
     font-size: 1.3rem;
 }
 
@@ -238,7 +258,7 @@ a.queue-row:hover {
 
 .back-link,
 .text-link {
-    color: var(--green);
+    color: var(--navy);
     font-weight: 700;
     text-decoration: none;
 }
@@ -276,18 +296,20 @@ a.queue-row:hover {
     grid-template-columns: minmax(220px, .7fr) 2fr;
     gap: 40px;
     color: #fff;
-    background: #244a3c;
+    background: #0b1f3b;
+    border-radius: 8px 8px 0 0;
+    box-shadow: var(--shadow);
 }
 
 .reason-band .eyebrow {
-    color: #f2c763;
+    color: #8eafd0;
 }
 
 .reason-codes {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1px;
-    background: #547065;
+    background: rgb(201 214 229 / 24%);
 }
 
 .reason-codes div {
@@ -295,16 +317,16 @@ a.queue-row:hover {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    background: #244a3c;
+    background: #123a63;
 }
 
 .reason-codes strong {
-    color: #f5d384;
+    color: #c9d6e5;
     font-size: .78rem;
 }
 
 .reason-codes span {
-    color: #d8e2dd;
+    color: #edf3f8;
     font-size: .84rem;
 }
 
@@ -314,6 +336,9 @@ a.queue-row:hover {
     min-height: 680px;
     background: var(--surface);
     border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    box-shadow: var(--shadow);
 }
 
 .source-pane,
@@ -324,7 +349,7 @@ a.queue-row:hover {
 
 .source-pane {
     padding-right: 32px;
-    background: #e9ede7;
+    background: #e8eef4;
 }
 
 .facts-pane {
@@ -343,8 +368,9 @@ a.queue-row:hover {
     margin: 0;
     padding: 24px;
     overflow: auto;
-    color: #dfe9e3;
-    background: #1f2a25;
+    color: #e5edf5;
+    background: #07172c;
+    border-radius: 6px;
     font-size: .78rem;
     line-height: 1.65;
     white-space: pre-wrap;
@@ -403,7 +429,7 @@ a.queue-row:hover {
 
 .line-header {
     color: var(--muted);
-    font-family: Aptos, Calibri, sans-serif;
+    font-family: Aptos, "Avenir Next", sans-serif;
     font-size: .68rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -416,6 +442,8 @@ a.queue-row:hover {
     margin-top: 36px;
     background: var(--line);
     border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
 }
 
 .policy-section,
@@ -434,8 +462,10 @@ a.queue-row:hover {
 
 .rule-list li {
     padding: 7px 9px;
-    color: var(--blue);
-    background: #e7f0f5;
+    color: var(--navy);
+    background: #e2eaf2;
+    border: 1px solid var(--pale);
+    border-radius: 4px;
     font-size: .75rem;
     font-weight: 700;
 }
@@ -457,7 +487,7 @@ a.queue-row:hover {
     width: 8px;
     height: 8px;
     margin-top: 5px;
-    background: var(--green);
+    background: var(--steel);
     box-shadow: 0 14px 0 -3px var(--line);
 }
 
@@ -480,22 +510,24 @@ a.queue-row:hover {
     grid-template-columns: .8fr 1.2fr;
     gap: 48px;
     color: white;
-    background: #17221d;
+    background: #0b1f3b;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
 }
 
 .decision-band .eyebrow {
-    color: #f2c763;
+    color: #8eafd0;
 }
 
 .decision-copy p,
 .decision-copy blockquote {
-    color: #c7d2cc;
+    color: #dce6f0;
 }
 
 .decision-copy blockquote {
     margin-left: 0;
     padding-left: 16px;
-    border-left: 3px solid #f2c763;
+    border-left: 3px solid var(--steel);
 }
 
 .decision-form label {
@@ -507,7 +539,7 @@ a.queue-row:hover {
 }
 
 .decision-form label span {
-    color: #9db0a6;
+    color: #9fb2c5;
     font-weight: 400;
 }
 
@@ -516,8 +548,10 @@ a.queue-row:hover {
     height: 110px;
     padding: 12px;
     resize: vertical;
-    border: 1px solid #64766d;
-    border-radius: 0;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--pale);
+    border-radius: 6px;
     font: inherit;
 }
 
@@ -532,9 +566,15 @@ a.queue-row:hover {
     min-height: 44px;
     padding: 8px;
     border: 0;
-    border-radius: 0;
+    border-radius: 6px;
     font-weight: 800;
     cursor: pointer;
+    transition: filter 140ms ease, transform 140ms ease;
+}
+
+.action-row button:not(:disabled):hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
 }
 
 .action-approve {
@@ -548,19 +588,19 @@ a.queue-row:hover {
 }
 
 .action-request_correction {
-    color: #17221d;
-    background: #f2c763;
+    color: white;
+    background: var(--steel);
 }
 
 .action-row button:disabled {
-    color: #86938c;
-    background: #39463f;
+    color: #9aadc0;
+    background: #31475d;
     cursor: not-allowed;
 }
 
 .disabled-note {
     margin: 10px 0 0;
-    color: #b8c5be;
+    color: #b8c8d8;
     font-size: .75rem;
 }
 

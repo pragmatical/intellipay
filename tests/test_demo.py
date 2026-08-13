@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from intellipay.config import Settings
-from intellipay.demo import reset_demo_state, run_demo
+from intellipay.config import ReasoningMode, Settings
+from intellipay.demo import build_parser, build_settings, reset_demo_state, run_demo
 from intellipay.workflow.models import Outcome, PaymentStatus, ReviewAction
 
 
@@ -32,3 +32,17 @@ def test_demo_seeds_pipeline_and_approval_ui_state(tmp_path: Path) -> None:
         finding.code for finding in results["Revision safety"].findings
     }
     assert summary.payment_count == 3
+
+
+def test_demo_cli_always_uses_a_fresh_fixed_database(tmp_path: Path, monkeypatch) -> None:
+    parser = build_parser()
+    option_strings = {option for action in parser._actions for option in action.option_strings}
+
+    assert "--database-path" not in option_strings
+    assert "--no-reset" not in option_strings
+    assert "--reasoning-mode" not in option_strings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("INTELLIPAY_REASONING_MODE", raising=False)
+    (tmp_path / ".env").write_text("INTELLIPAY_REASONING_MODE=live\n")
+    assert build_settings(parser.parse_args([])).reasoning_mode is ReasoningMode.LIVE
