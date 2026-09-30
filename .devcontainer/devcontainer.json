@@ -11,7 +11,7 @@
 		"ghcr.io/devcontainers/features/node:2.1.0": {
 			"version": "lts"
 		},
-		"ghcr.io/devcontainers/features/docker-in-docker:4.0.0": {
+		"ghcr.io/devcontainers/features/docker-in-docker:4.1.2": {
 			"version": "latest",
 			"dockerDashComposeVersion": "v2"
 		},
